@@ -44,14 +44,14 @@ void Ieee80211MgmtSTASimplified::handleUpperMessage(cPacket *msg)
     sendOrEnqueue(frame);
 }
 
-void Ieee80211MgmtSTASimplified::handleCommand(int msgkind, cPolymorphic *ctrl)
+void Ieee80211MgmtSTASimplified::handleCommand(int msgkind, cObject *ctrl)
 {
     error("handleCommand(): no commands supported");
 }
 
 Ieee80211DataFrame *Ieee80211MgmtSTASimplified::encapsulate(cPacket *msg)
 {
-    Ieee80211DataFrame *frame = new Ieee80211DataFrame(msg->getName());
+    Ieee80211DataFrameWithSNAP *frame = new Ieee80211DataFrameWithSNAP(msg->getName());
 
     // frame goes to the AP
     frame->setToDS(true);
@@ -63,13 +63,14 @@ Ieee80211DataFrame *Ieee80211MgmtSTASimplified::encapsulate(cPacket *msg)
     Ieee802Ctrl *ctrl = check_and_cast<Ieee802Ctrl *>(msg->removeControlInfo());
     ASSERT(!ctrl->getDest().isUnspecified());
     frame->setAddress3(ctrl->getDest());
+    frame->setEtherType(ctrl->getEtherType());
     delete ctrl;
 
     frame->encapsulate(msg);
     return frame;
 }
 
-void Ieee80211MgmtSTASimplified::receiveChangeNotification(int category, const cPolymorphic *details)
+void Ieee80211MgmtSTASimplified::receiveChangeNotification(int category, const cObject *details)
 {
     Enter_Method_Silent();
     printNotificationBanner(category, details);

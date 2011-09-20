@@ -22,9 +22,7 @@
 #ifndef __INET_ERRORHANDLING_H
 #define __INET_ERRORHANDLING_H
 
-#include <omnetpp.h>
 #include "INETDefs.h"
-#include "IPControlInfo.h"
 
 
 /**

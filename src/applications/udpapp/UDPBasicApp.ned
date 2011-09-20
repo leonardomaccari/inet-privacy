@@ -19,33 +19,39 @@
 
 package inet.applications.udpapp;
 
+import inet.applications.IUDPApp;
+
+
 //
-// Sends \UDP packets to the given \IP address at the given interval.
-// Compatible with both IPv4 and IPv6.
+// Sends UDP packets to the given IP address at the given interval.
+// Compatible with both IPv4 (~IP) and ~IPv6.
 //
 // The interval can be a constant or a random value (e.g. exponential(1)).
 // If the destAddresses parameter contains more than one address, one
 // of them is randomly chosen for each packet. An address may be given in the
-// dotted decimal notation, or with the module name. (The IPAddressResolver
+// dotted decimal notation, or with the module name. (The IPvXAddressResolver
 // class is used to resolve the address.) To disable the model, set
 // destAddresses to "".
 //
-// The peer can be UDPSink or another UDPBasicApp (it handles received packets
-// exactly like UDPSink).
+// The peer can be ~UDPSink or another ~UDPBasicApp (it handles received packets
+// exactly like ~UDPSink).
 //
-simple UDPBasicApp like UDPApp
+simple UDPBasicApp like IUDPApp
 {
     parameters:
-        int localPort; // if -1, app doesn't bind in UDP
+        int localPort = default(-1);  // local port (-1: use ephemeral port)
         int destPort;
-        volatile int messageLength @unit("B"); // length of messages to generate, in bytes
-        volatile double messageFreq @unit("s"); // should usually be a random value, e.g. exponential(1)
-        string destAddresses = default(""); // list of \IP addresses, separated by spaces
+        volatile int messageLength @unit(B); // length of messages to generate, in bytes
+        double startTime @unit(s) = default(this.sendInterval); // application start time (start of the first packet)
+        double stopTime @unit(s) = default(0);  // time of finish sending, 0 means forever
+        volatile double sendInterval @unit(s); // should usually be a random value, e.g. exponential(1)
+        string destAddresses = default(""); // list of IP addresses, separated by spaces
         @display("i=block/app");
+        @signal[sentPk](type=cPacket);
+        @signal[rcvdPk](type=cPacket);
+        @statistic[rcvdPkBytes](title="Received packet bytes"; source="packetBytes(rcvdPk)"; unit=B; record=count,sum,vector; interpolationmode=none);
+        @statistic[sentPkBytes](title="Sent packet bytes"; source="packetBytes(sentPk)"; unit=B; record=count,sum,vector; interpolationmode=none);
     gates:
         input udpIn @labels(UDPControlInfo/up);
         output udpOut @labels(UDPControlInfo/down);
 }
-
-
-
