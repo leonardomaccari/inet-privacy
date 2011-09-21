@@ -50,6 +50,17 @@ simple Radio like IRadio
         // RiceModel
         double K @unit("dB") = default(8dB);
 
+        // Dual Slope Model
+
+        // The Breakdown distance
+        double breakpointDistance @unit("m")= default(100m);
+        // Coefficient before the breakpoint distance
+        double alphaFreeSpace = default(2);
+        // Coefficient after the breakpoint distance
+        bool debugModel = default(false); // enable some more logging (used for DualSlope)
+        double alphaObstacle = default(4);
+        bool smoothStep = default(true);
+
         // battery module parameters (if any of them is negative, the battery module is disabled)
         double usage_radio_idle @unit(mA) = default(-1mA); // disable battery registration
         double usage_radio_recv @unit(mA) = default(-1mA); // disable battery registration

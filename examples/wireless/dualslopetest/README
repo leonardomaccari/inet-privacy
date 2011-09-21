@@ -1,0 +1,24 @@
+
+
+this model implements a dual-slope pathloss model, as in the paper
+described in http://dl.acm.org/citation.cfm?id=1416323&bnc=1 and
+http://books.google.com/books?id=VbCCJhjO4OcC&lpg=PA79&dq=dual-slope%20path%20loss%20coefficients&pg=PA79#v=onepage&q&f=false
+
+Basically is a pathloss model with two 
+coefficients, one to be used before the breakpoint distance, and another
+to be used after. This mimics the possibility of having freespace up to 
+a certain distance and obstruction of some obstacles after that 
+distance. The second reference implements a correction factor to avoid
+sharp edges in the transition 
+
+
+Example to test the DualSlopeModel, expect to have a higher power decay than
+freespace (default alpha values are 2,4) or a power decay with two steps and a
+knee at the breakpoint distance (depending on the smoothStep parameter).
+
+If in DualSlopeModel.cc you enable DEBUGMODEL you can reproduce the graphs that
+are in this folder, unsmoothed.png and smoothed.png. To do this:
+ -  ./run -u cmdenv -c TestDualSlope 2> plot.txt
+ -  open gnuplot and type: plot 'plot.txt' using 1:2 ti "freespace", 'plot.txt' using 1:3 ti "unsmoothed"
+
+do the test with both smoothStep values
