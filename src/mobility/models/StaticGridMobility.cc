@@ -39,12 +39,49 @@ void StaticGridMobility::initialize(int stage)
         numHosts = par("numHosts");
         marginX = par("marginX");
         marginY = par("marginY");
+        horizSize = par("horizontalSize");
+        vertSize = 0;
     }
 }
 
 void StaticGridMobility::initializePosition()
 {
     int index = visualRepresentation->getIndex();
+
+    double realSize = sqrt((double)numHosts);
+    bool isSquared;
+    if(horizSize == 0)
+        horizSize = (int)ceil(sqrt((double)numHosts));
+
+    if ((realSize - horizSize) == 0 )
+        isSquared = 1;
+    else
+        isSquared = 0;
+
+    if(!isSquared)
+        vertSize = (int)ceil((double)numHosts/horizSize);
+    else
+        vertSize = horizSize;
+
+    int col = (index) % horizSize;
+    double row = floor((index) / (double)horizSize);
+
+    lastPosition.x = constraintAreaMin.x + marginX
+        + col * ((constraintAreaMax.x - constraintAreaMin.x) - 2 * marginX) / (horizSize - 1);
+
+    if (lastPosition.x >= constraintAreaMax.x)
+        lastPosition.x -= 1;
+
+    lastPosition.y = constraintAreaMin.y + marginY
+        + row * ((constraintAreaMax.y - constraintAreaMin.y) - 2 * marginY) / (vertSize - 1);
+
+    if (lastPosition.y >= constraintAreaMax.y)
+        lastPosition.y -= 1;
+    lastPosition.z = 0;
+
+
+/*  
+
     int size = (int)ceil(sqrt((double)numHosts));
     int row = (int)floor((double)index / (double)size);
     int col = index % size;
@@ -57,6 +94,7 @@ void StaticGridMobility::initializePosition()
     if (lastPosition.y >= constraintAreaMax.y)
         lastPosition.y -= 1;
     lastPosition.z = 0;
+    */
 }
 
 void StaticGridMobility::finish()

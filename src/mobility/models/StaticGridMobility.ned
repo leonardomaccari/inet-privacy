@@ -32,5 +32,7 @@ simple StaticGridMobility extends MobilityBase
         int marginX @unit(m);
         int marginY @unit(m);
         int numHosts;
+        int horizontalSize = default(0); // create a non-squared grid forcing
+                                         // the horizontal side of the grid
         @class(StaticGridMobility);
 }
