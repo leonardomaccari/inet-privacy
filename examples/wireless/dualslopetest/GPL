@@ -1,8 +1,3 @@
-
-Example to test the DualSlopeModel, expect to have a power decay with two steps 
-the first one corresponding to the breakpoint distance.
-
-
   Copyright Leonardo Maccari, 2011. This software has been developed 
   for the PAF-FPE Project financed by EU and Provincia di Trento.
   See www.pervacy.eu or contact me at leonardo.maccari@unitn.it
