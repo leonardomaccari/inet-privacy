@@ -16,6 +16,7 @@
 package inet.nodes.inet;
 
 import inet.networklayer.IManetRouting;
+import inet.applications.addressgenerator.AddressGenerator;
 
 
 //
@@ -41,7 +42,10 @@ module AdhocHost extends WirelessHost
 
     submodules:
         manetrouting: <routingProtocol> like IManetRouting if routingProtocol != "" {
-            @display("p=522,307");
+            @display("p=53,50");
+        }
+        addressGenerator: AddressGenerator if routingProtocol != "" {
+            @display("p=200,307");
         }
     connections:
         networkLayer.manetOut --> manetrouting.from_ip if routingProtocol != "";

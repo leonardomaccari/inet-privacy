@@ -242,6 +242,20 @@ std::vector<IPv4Address> RoutingTable::gatherAddresses() const
     return addressvector;
 }
 
+std::map<IPv4Address, int> RoutingTable::gatherRoutes() const
+{
+
+	std::map<IPv4Address,int> targetSet;
+	for (RouteVector::const_iterator i=routes.begin(); i!=routes.end(); ++i){
+		if((*i)->getType() != IPv4Route::DIRECT){
+			std::map<IPv4Address,int>::iterator jj = targetSet.find((*i)->getHost());
+			if(jj == targetSet.end() || (jj->second > (*i)->getMetric()))
+				targetSet[(*i)->getHost()] = (*i)->getMetric();
+		}
+	}
+	return targetSet;
+}
+
 //---
 
 void RoutingTable::configureInterfaceForIPv4(InterfaceEntry *ie)

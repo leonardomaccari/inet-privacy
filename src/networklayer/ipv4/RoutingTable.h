@@ -29,6 +29,7 @@
 #define __ROUTINGTABLE_H
 
 #include <vector>
+#include <map>
 
 #include "INETDefs.h"
 
@@ -268,6 +269,10 @@ class INET_API RoutingTable: public cSimpleModule, public IRoutingTable, protect
      * Utility function: Returns a vector of all addresses of the node.
      */
     virtual std::vector<IPv4Address> gatherAddresses() const;
+
+    virtual std::map<IPv4Address, int> gatherRoutes() const;
+
+
     //@}
     virtual void setTimeToLiveRoutingEntry(simtime_t a){timetolive_routing_entry = a;}
     virtual simtime_t getTimeToLiveRoutingEntry(){return timetolive_routing_entry;}

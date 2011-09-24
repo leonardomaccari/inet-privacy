@@ -173,6 +173,12 @@ class INET_API IRoutingTable
      * Utility function: Returns a vector of all addresses of the node.
      */
     virtual std::vector<IPv4Address> gatherAddresses() const = 0;
+
+    /**
+     * Return a set of valid routes with metric
+     */
+    virtual std::map<IPv4Address, int> gatherRoutes() const = 0;
+
     //@}
    // Dsdv time to live test entry
     virtual void setTimeToLiveRoutingEntry(simtime_t a) = 0;
