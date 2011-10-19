@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scave:Analysis xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:scave="http://www.omnetpp.org/omnetpp/scave">
+  <inputs>
+    <inputs name="/inet/examples/adhoc/addressgeneration/results/Ping*.vec"/>
+    <inputs name="/inet/examples/adhoc/addressgeneration/results/Ping*.sca"/>
+  </inputs>
+  <datasets>
+    <datasets name="hopCount">
+      <items xsi:type="scave:Add" filterPattern="module(*.addressGenerator) AND name(&quot;Average hop count in Address list&quot;)" type="VECTOR"/>
+      <items xsi:type="scave:LineChart" name="" lineNameFormat=""/>
+    </datasets>
+    <datasets name="changeFraction">
+      <items xsi:type="scave:Add" filterPattern="run(Ping1-0*) AND module(*.addressGenerator) AND name(&quot;Fraction of changed addresses from one generation to another&quot;)" type="VECTOR"/>
+      <items xsi:type="scave:LineChart" name="" lineNameFormat=""/>
+    </datasets>
+    <datasets name="change-crossing balanced">
+      <items xsi:type="scave:Add" filterPattern="run(Ping2-0*) AND module(*.addressGenerator) AND name(&quot;Fraction of changed addresses from one generation to another&quot;)" type="VECTOR"/>
+      <items xsi:type="scave:LineChart" name="balanced" lineNameFormat=""/>
+    </datasets>
+    <datasets name="change-crossing consistent">
+      <items xsi:type="scave:Add" filterPattern="run(Ping3-*) AND module(*.addressGenerator) AND name(&quot;Fraction of changed addresses from one generation to another&quot;)" type="VECTOR"/>
+      <items xsi:type="scave:LineChart" name="consistent" lineNameFormat=""/>
+    </datasets>
+    <datasets name="change-crossing semi-consistent">
+      <items xsi:type="scave:Add" filterPattern="run(Ping3a*) AND module(*.addressGenerator) AND name(&quot;Fraction of changed addresses from one generation to another&quot;)" type="VECTOR"/>
+      <items xsi:type="scave:LineChart" name="semi-consistent" lineNameFormat=""/>
+    </datasets>
+    <datasets name="RWP">
+      <items xsi:type="scave:Add" filterPattern="run(Ping4-*) AND module(*.addressGenerator) AND name(&quot;Average hop count in Address list&quot;)" type="VECTOR"/>
+      <items xsi:type="scave:Apply" operation="slidingwinavg">
+        <params name="windowSize" value="100"/>
+      </items>
+      <items xsi:type="scave:LineChart" name="RWP" lineNameFormat=""/>
+    </datasets>
+    <datasets name="RWP2">
+      <items xsi:type="scave:Add" filterPattern="run(Ping5-*) AND module(*.addressGenerator) AND name(&quot;Average hop count in Address list&quot;)" type="VECTOR"/>
+      <items xsi:type="scave:Apply" operation="slidingwinavg">
+        <params name="windowSize" value="100"/>
+      </items>
+      <items xsi:type="scave:LineChart" name="" lineNameFormat=""/>
+    </datasets>
+  </datasets>
+  <chartSheets>
+    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.1 //@datasets/@datasets.1/@items.1 //@datasets/@datasets.2/@items.1 //@datasets/@datasets.3/@items.1 //@datasets/@datasets.4/@items.1 //@datasets/@datasets.5/@items.2 //@datasets/@datasets.6/@items.2"/>
+    <chartSheets name="" charts="//@datasets/@datasets.3/@items.1 //@datasets/@datasets.4/@items.1 //@datasets/@datasets.2/@items.1"/>
+  </chartSheets>
+</scave:Analysis>
