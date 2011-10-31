@@ -34,9 +34,7 @@ import inet.applications.IUDPApp;
 simple ChatApp like IUDPApp
 {
     parameters:
-        string destAddresses; // space-separated list of destination IP addresses, can be empty, can be also "host"
         string chooseDestAddrMode @enum("once","perBurst") = default("perBurst"); // when to change the destination address
-        int destAddrRNG = default(0); // random generator ID for selecting a destination address
         int localPort; // local UDP port number
         int destPort; // remote UDP port number        
         double startTime @unit("s") = default(0s); // application start time (start of the first burst)
@@ -47,8 +45,10 @@ simple ChatApp like IUDPApp
         volatile double burstDuration @unit("s") = default(pareto_shifted(2.7,300s,0s)); // burst duration time (zero not allowed)
         volatile double burstInterval @unit("s") = default(pareto_shifted(0.53,300s,0s)); // time between the beginning of two bursts (zero allowed)
         volatile double messageFreq @unit("s") = default(weibull(30s,1s)); // time between messages during bursts; usually a random value, e.g. 0.1s+uniform(-0.001s,0.001s); zero not allowed
-        // 
+        
         double delayLimit @unit("s") = default(0); // maximum accepted delay for a packet; packets with a bigger delay are discarded (dropped), zero value means no limit
+        bool debugStats = default(false);
+        
         @statistic[sentPk](title="packets sent"; record=count,"vector(count)"; interpolationmode=none);
         @statistic[rcvdPk](title="packets received"; record=count,"vector(count)"; interpolationmode=none);
         @statistic[dropPk](title="packets dropped"; record=count,"vector(count)"; interpolationmode=none);
@@ -56,7 +56,6 @@ simple ChatApp like IUDPApp
         @statistic[endToEndDelay](title="delay";record=histogram,stats,vector);
         // testing the statistic behavior
         
-        bool debugStats = default(false);
         @statistic[sendInterval](title="Send interval";record=histogram);
         @statistic[bDuration](title="Burst Duration";record=histogram);
         @statistic[bInterval](title="Burst Interval";record=histogram);
@@ -64,6 +63,7 @@ simple ChatApp like IUDPApp
         @statistic[startedSessions](title="Started sessions"; record=histogram);
         @statistic[answeredSessions](title="Answered Sessions"; record=histogram);
         @statistic[numUDPErrorsSignal](title="UDP Errors"; record=last);
+        @statistic[targetStatisticsSignal](title="Target statistics"; record=histogram);
         
     gates:
         input udpIn @labels(UDPControlInfo/up);

@@ -38,6 +38,7 @@
 
 #include "IPvXAddress.h"
 #include "UDPBasicApp.h"
+#include "AddressGenerator.h"
 
 
 typedef struct Burst {
@@ -76,10 +77,9 @@ class INET_API ChatApp : public UDPBasicApp
     protected:
     int localPort, destPort;
 
+    AddressGenerator * addressGeneratorModule;
     ChooseDestAddrMode chooseDestAddrMode;
-    std::vector<IPvXAddress> destAddresses;
     IPvXAddress destAddr;
-    int destAddrRNG;
     int networkSize;
     typedef std::map<IPvXAddress, Burst> BurstList;
     BurstList burstList;
@@ -128,10 +128,13 @@ class INET_API ChatApp : public UDPBasicApp
     static simsignal_t messageSize;
     static simsignal_t startedSessions;
     static simsignal_t answeredSessions;
+    static simsignal_t targetStatisticsSignal;
+
 
 
     // chooses random destination address
     virtual IPvXAddress chooseDestAddr();
+    void chooseDestAddr(IPvXAddress& checkAddr);
     virtual cPacket *createPacket();
     virtual void processPacket(cPacket *msg);
 

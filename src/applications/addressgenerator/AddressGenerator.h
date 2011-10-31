@@ -72,6 +72,9 @@ protected:
 	void balancedPurge(int size);
 	void statsGenerator(std::map<IPv4Address, int>& oldList);
 	virtual void finish();
+
+public:
+	std::map<IPv4Address, int> gatherAddresses(){return destAddresses;};
 };
 
 #endif

@@ -35,13 +35,9 @@
 									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
 									<listOptionValue builtIn="false" value="WITH_IPv4"/>
 									<listOptionValue builtIn="false" value="WITH_IPv6"/>
-									<listOptionValue builtIn="false" value="WITH_xMIPv6"/>
 									<listOptionValue builtIn="false" value="WITH_UDP"/>
-									<listOptionValue builtIn="false" value="WITH_RTP"/>
-									<listOptionValue builtIn="false" value="WITH_SCTP"/>
 									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
 									<listOptionValue builtIn="false" value="WITH_PPP"/>
-									<listOptionValue builtIn="false" value="WITH_EXT_IF"/>
 									<listOptionValue builtIn="false" value="WITH_MPLS"/>
 									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
 									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
@@ -55,13 +51,9 @@
 									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
 									<listOptionValue builtIn="false" value="WITH_IPv4"/>
 									<listOptionValue builtIn="false" value="WITH_IPv6"/>
-									<listOptionValue builtIn="false" value="WITH_xMIPv6"/>
 									<listOptionValue builtIn="false" value="WITH_UDP"/>
-									<listOptionValue builtIn="false" value="WITH_RTP"/>
-									<listOptionValue builtIn="false" value="WITH_SCTP"/>
 									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
 									<listOptionValue builtIn="false" value="WITH_PPP"/>
-									<listOptionValue builtIn="false" value="WITH_EXT_IF"/>
 									<listOptionValue builtIn="false" value="WITH_MPLS"/>
 									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
 									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
@@ -81,24 +73,50 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="org.omnetpp.cdt.gnu.config.debug.1590007136.1915469051" name="/" resourcePath="src">
-						<toolChain id="org.omnetpp.cdt.gnu.toolchain.debug.151038819" name="GCC for OMNeT++" superClass="org.omnetpp.cdt.gnu.toolchain.debug" unusedChildren="">
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.987895542" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.447573921"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.228690498" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base.456466295">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1804174460" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+					<folderInfo id="org.omnetpp.cdt.gnu.config.debug.1590007136.1806884175" name="/" resourcePath="src">
+						<toolChain id="org.omnetpp.cdt.gnu.toolchain.debug.1875070518" name="GCC for OMNeT++" superClass="org.omnetpp.cdt.gnu.toolchain.debug" unusedChildren="">
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1141816787" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.447573921"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.2112090202" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base.456466295">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1066394108" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="WITH_TCP_COMMON"/>
+									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
+									<listOptionValue builtIn="false" value="WITH_IPv4"/>
+									<listOptionValue builtIn="false" value="WITH_IPv6"/>
+									<listOptionValue builtIn="false" value="WITH_UDP"/>
+									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
+									<listOptionValue builtIn="false" value="WITH_PPP"/>
+									<listOptionValue builtIn="false" value="WITH_MPLS"/>
+									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
+									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
+									<listOptionValue builtIn="false" value="WITH_MANET"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1156321602" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1242973452" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.866720212">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1541602674" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.519769851" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.866720212">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.201198819" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="WITH_TCP_COMMON"/>
+									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
+									<listOptionValue builtIn="false" value="WITH_IPv4"/>
+									<listOptionValue builtIn="false" value="WITH_IPv6"/>
+									<listOptionValue builtIn="false" value="WITH_UDP"/>
+									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
+									<listOptionValue builtIn="false" value="WITH_PPP"/>
+									<listOptionValue builtIn="false" value="WITH_MPLS"/>
+									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
+									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
+									<listOptionValue builtIn="false" value="WITH_MANET"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.914554558" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1264347575" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base.1828265921"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.850523057" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base.423181083"/>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1755497456" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base.1249982740">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.876655832" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1258188377" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base.1828265921"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.332123854" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base.423181083"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1494806812" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base.1249982740">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.577520726" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="applications/voiptool|transport/tcp_nsc|transport/tcp_lwip" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+						<entry excluding="linklayer/ext|util/headerserializers/sctp|transport/sctp|applications/sctpapp|transport/rtp|applications/rtpapp|nodes/xmipv6|networklayer/xmipv6|networklayer/ipv6tunneling|applications/voiptool|transport/tcp_nsc|transport/tcp_lwip" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -131,13 +149,9 @@
 									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
 									<listOptionValue builtIn="false" value="WITH_IPv4"/>
 									<listOptionValue builtIn="false" value="WITH_IPv6"/>
-									<listOptionValue builtIn="false" value="WITH_xMIPv6"/>
 									<listOptionValue builtIn="false" value="WITH_UDP"/>
-									<listOptionValue builtIn="false" value="WITH_RTP"/>
-									<listOptionValue builtIn="false" value="WITH_SCTP"/>
 									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
 									<listOptionValue builtIn="false" value="WITH_PPP"/>
-									<listOptionValue builtIn="false" value="WITH_EXT_IF"/>
 									<listOptionValue builtIn="false" value="WITH_MPLS"/>
 									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
 									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
@@ -151,13 +165,9 @@
 									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
 									<listOptionValue builtIn="false" value="WITH_IPv4"/>
 									<listOptionValue builtIn="false" value="WITH_IPv6"/>
-									<listOptionValue builtIn="false" value="WITH_xMIPv6"/>
 									<listOptionValue builtIn="false" value="WITH_UDP"/>
-									<listOptionValue builtIn="false" value="WITH_RTP"/>
-									<listOptionValue builtIn="false" value="WITH_SCTP"/>
 									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
 									<listOptionValue builtIn="false" value="WITH_PPP"/>
-									<listOptionValue builtIn="false" value="WITH_EXT_IF"/>
 									<listOptionValue builtIn="false" value="WITH_MPLS"/>
 									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
 									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
@@ -177,24 +187,50 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="org.omnetpp.cdt.gnu.config.release.960890479.902065584" name="/" resourcePath="src">
-						<toolChain id="org.omnetpp.cdt.gnu.toolchain.release.327713043" name="GCC for OMNeT++" superClass="org.omnetpp.cdt.gnu.toolchain.release" unusedChildren="">
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.170337308" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.879724210"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.2034474051" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base.209048065">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2122852078" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+					<folderInfo id="org.omnetpp.cdt.gnu.config.release.960890479.1274376120" name="/" resourcePath="src">
+						<toolChain id="org.omnetpp.cdt.gnu.toolchain.release.1668285630" name="GCC for OMNeT++" superClass="org.omnetpp.cdt.gnu.toolchain.release" unusedChildren="">
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1521720741" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.879724210"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.192087802" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base.209048065">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1614832498" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="WITH_TCP_COMMON"/>
+									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
+									<listOptionValue builtIn="false" value="WITH_IPv4"/>
+									<listOptionValue builtIn="false" value="WITH_IPv6"/>
+									<listOptionValue builtIn="false" value="WITH_UDP"/>
+									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
+									<listOptionValue builtIn="false" value="WITH_PPP"/>
+									<listOptionValue builtIn="false" value="WITH_MPLS"/>
+									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
+									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
+									<listOptionValue builtIn="false" value="WITH_MANET"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.513160042" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1939524461" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.592637975">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.244055791" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.749482651" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.592637975">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1973263828" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="WITH_TCP_COMMON"/>
+									<listOptionValue builtIn="false" value="WITH_TCP_INET"/>
+									<listOptionValue builtIn="false" value="WITH_IPv4"/>
+									<listOptionValue builtIn="false" value="WITH_IPv6"/>
+									<listOptionValue builtIn="false" value="WITH_UDP"/>
+									<listOptionValue builtIn="false" value="WITH_ETHERNET"/>
+									<listOptionValue builtIn="false" value="WITH_PPP"/>
+									<listOptionValue builtIn="false" value="WITH_MPLS"/>
+									<listOptionValue builtIn="false" value="WITH_OSPFv2"/>
+									<listOptionValue builtIn="false" value="WITH_BGPv4"/>
+									<listOptionValue builtIn="false" value="WITH_MANET"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.890954074" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.556890302" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base.1299139491"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.1447499357" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base.869621795"/>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.base.960452794" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base.1340309855">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.364056555" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1109437169" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base.1299139491"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.2110962074" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base.869621795"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.928635582" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base.1340309855">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1434526048" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="applications/voiptool|transport/tcp_nsc|transport/tcp_lwip" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
+						<entry excluding="linklayer/ext|util/headerserializers/sctp|transport/sctp|applications/sctpapp|transport/rtp|applications/rtpapp|nodes/xmipv6|networklayer/xmipv6|networklayer/ipv6tunneling|applications/voiptool|transport/tcp_nsc|transport/tcp_lwip" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -412,4 +448,5 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.omnetpp.cdt.OmnetppGCCPerProjectProfile"/>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="refreshScope"/>
 </cproject>

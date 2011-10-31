@@ -59,6 +59,7 @@ simsignal_t ChatApp::messageSize = SIMSIGNAL_NULL;
 simsignal_t ChatApp::startedSessions = SIMSIGNAL_NULL;
 simsignal_t ChatApp::answeredSessions = SIMSIGNAL_NULL;
 simsignal_t ChatApp::numUDPErrorsSignal = SIMSIGNAL_NULL;
+simsignal_t ChatApp::targetStatisticsSignal= SIMSIGNAL_NULL;
 
 
 ChatApp::ChatApp()
@@ -81,7 +82,6 @@ void ChatApp::initialize(int stage)
     // address auto-assignment takes place etc.
     if (stage != 3)
         return;
-  //  UDPBasicApp::initialize(stage);
     counter = 0;
     numSent = 0;
     numReceived = 0;
@@ -103,13 +103,15 @@ void ChatApp::initialize(int stage)
     nextBurst = startTime;
     nextPkt = startTime;
     graceTime = 1000; // grace time before erasing a burst from the list
-    destAddrRNG = par("destAddrRNG");
     intervalUpperBound = par("intervalUpperBound").doubleValue();
     const char *addrModeStr = par("chooseDestAddrMode").stringValue();
     int addrMode = cEnum::get("ChooseDestAddrMode")->lookup(addrModeStr);
     if (addrMode == -1)
         throw cRuntimeError(this, "Invalid chooseDestAddrMode: '%s'", addrModeStr);
     chooseDestAddrMode = (ChooseDestAddrMode)addrMode;
+    addressGeneratorModule = dynamic_cast<AddressGenerator*>(getParentModule()->getModuleByRelativePath("addressGenerator"));
+    if (addressGeneratorModule == 0)
+    	error("Wrong path to the address generator!?!?");
 
     WATCH(numSent);
     WATCH(numReceived);
@@ -124,47 +126,12 @@ void ChatApp::initialize(int stage)
     socket.bind(localPort);
     //bindToPort(localPort);
 
-    const char *destAddrs = par("destAddresses");
-    cStringTokenizer tokenizer(destAddrs);
-    const char *token;
-    const char *random_add;
-
-    // Stripped version from InetManet, this should be better
-    // placed somewhere in flatNetworkConfigurator/IPAddressResolver
-
-    while ((token = tokenizer.nextToken())!=NULL)
-    {
-    	if ((random_add= strstr (token,"random"))!=NULL)
-    	{
-    		const char *leftparenp = strchr(random_add,'(');
-    		const char *rightparenp = strchr(random_add,')');
-    		std::string nodetype;
-    		nodetype.assign(leftparenp+1, rightparenp-leftparenp-1);
-    		for (int i=0; i<(this)->getParentModule()->getVectorSize(); i++)
-    		{
-        		std::stringstream nodeId;
-        		nodeId << (this)->getParentModule()->getParentModule()->getFullPath() << "." << nodetype << "[" << i << "]";
-    			if (strstr (this->getParentModule()->getFullPath().c_str(),nodeId.str().c_str())  ==NULL)
-    				destAddresses.push_back(IPvXAddressResolver().resolve(nodeId.str().c_str()));
-    		}
-
-    	}
-    	else if ( strstr (token,"Broadcast")!=NULL)
-    		destAddresses.push_back(IPv4Address::ALLONES_ADDRESS); // FIXME what if this is IPv6?
-    	else
-    		destAddresses.push_back(IPvXAddressResolver().resolve(token));
-    }
-
-    isSource = !destAddresses.empty();
+    isSource = (startTime >= 0); // Never start if startTime < 0
 
     timerNext = 0;
     if (isSource)
     {
-        if (chooseDestAddrMode == ONCE)
-            destAddr = chooseDestAddr();
-
         activeBurst = true;
-
         timerNext = new cMessage("ChatAppTimer");
         MsgContext * ctx = new MsgContext;
         ctx->start = true;
@@ -186,24 +153,50 @@ void ChatApp::initialize(int stage)
     	bDuration = registerSignal("bDuration");
     	burstInterval = registerSignal("bInterval");
     	messageSize = registerSignal("messageSize");
+    	targetStatisticsSignal = registerSignal("targetStatisticsSignal");
+
     }
 
 }
 
 
+void ChatApp::chooseDestAddr(IPvXAddress & checkAddr)
+{
+	std::map<IPv4Address, int> currentList = addressGeneratorModule->gatherAddresses();
+	if (currentList.empty()){
+		checkAddr = IPv4Address();
+		return;
+	}
+
+	if (currentList.find(checkAddr.get4()) != currentList.end())
+		return;
+	else{
+		int rnd = uniform(0,currentList.size());
+		std::map<IPv4Address, int>::iterator ii = currentList.begin();
+		while (rnd > 0){
+			ii++;
+			rnd--;
+		}
+		checkAddr =  ii->first;
+	}
+	emit(targetStatisticsSignal, (checkAddr.get4().getInt()&0x000F));
+}
+
 IPvXAddress ChatApp::chooseDestAddr()
 {
-    if (destAddresses.size() == 1)
-        return destAddresses[0];
-    std::vector<IPvXAddress> tmpAddressList;
-    for(std::vector<IPvXAddress>::iterator ii = destAddresses.begin();
-    		ii!= destAddresses.end(); ii++)
-    {
-    	if (burstList.find(*ii) == burstList.end())
-    		tmpAddressList.push_back(*ii);
-    }
-    int k = genk_intrand(destAddrRNG, tmpAddressList.size());
-    return tmpAddressList[k];
+	std::map<IPv4Address, int> currentList = addressGeneratorModule->gatherAddresses();
+	if (currentList.empty()){
+		return IPvXAddress();
+	}
+	int rnd = uniform(0,currentList.size());
+	std::map<IPv4Address, int>::iterator ii = currentList.begin();
+	while (rnd > 0){
+		ii++;
+		rnd--;
+	}
+	emit(targetStatisticsSignal, (ii->first.getInt()&0x000F));
+	return ii->first;
+
 }
 
 cPacket *ChatApp::createPacket()
@@ -232,7 +225,7 @@ void ChatApp::handleMessage(cMessage *msg)
 		BurstList::iterator ii;
 		MsgContext* ctx = (MsgContext*)msg->getContextPointer();
 		if (ctx->start == true){ // start a new burst
-			newAddr = generateBurst(0); // generate burst will add/remove to the map
+			newAddr = generateBurst(0); // chose target, add to burstList
 			if(!newAddr.isUnspecified())
 			{
 				cMessage * shortTimer = new cMessage("Inter-packet-timer");
@@ -246,8 +239,8 @@ void ChatApp::handleMessage(cMessage *msg)
 					newintervalLength = stoptime;
 				scheduleAt(simTime()+newintervalLength, shortTimer);
 				emit(sendInterval, newintervalLength);
+				emit(startedSessions,1);
 			}
-			emit(startedSessions,1);
 			// the papers show that the pareto distribution is matched only in a certain interval
 			// roughly between 10m and 1d, I need to truncate it because it is quite slow fading.
 			// The default upper bound is 2hours for realistic simulations. I'm also checking here
@@ -255,7 +248,7 @@ void ChatApp::handleMessage(cMessage *msg)
 			int i = 0;
 			double newintervalLength = burstIntervalPar->doubleValue();
 			double now = simTime().dbl();
-			while(!(newintervalLength >600 && newintervalLength<intervalUpperBound) || now+newintervalLength > maxSimTime){
+			while(!(newintervalLength<intervalUpperBound) || now+newintervalLength > maxSimTime){
 				newintervalLength = burstIntervalPar->doubleValue();
 				i++;
 				if (i>100){
@@ -264,7 +257,9 @@ void ChatApp::handleMessage(cMessage *msg)
 							"precision %f. Please use different parameters for traffic "
 							"distributions or increase simulation time size", intervalUpperBound, maxSimTime);
 				}
-			}
+			} if (!newAddr.isUnspecified() && (now+newintervalLength > burstList[newAddr].stopTime.dbl()) )
+				ev << "Warning! you chose burstInterval parameters that generate overlapping bursts! (" <<
+				now+newintervalLength << "/" << burstList[newAddr].stopTime << ")";
 			scheduleAt(simTime()+newintervalLength, msg);
 			emit(burstInterval, newintervalLength);
 			// reschedule start time
@@ -414,12 +409,22 @@ IPvXAddress ChatApp::generateBurst(struct Burst* currentBurst)
         emit(bDuration, burstDuration);
         Burst * newBurst = new Burst(now+burstDuration);
 
-        if (chooseDestAddrMode == PER_BURST)
+        if (chooseDestAddrMode == ONCE)
+        	 if(destAddr.isUnspecified()){
+                 destAddr = chooseDestAddr();
+        		 retAddr = destAddr;
+        	 }
+        	 else {
+        		 IPvXAddress & destR = destAddr;
+        		 chooseDestAddr(destR);
+        		 retAddr = destAddr;
+        	 }
+        else if (chooseDestAddrMode == PER_BURST)
             retAddr = chooseDestAddr();
-        else
-        	retAddr = destAddr;
-        newBurst->destAddr = retAddr;
-        burstList[retAddr] = *newBurst;
+        if (!retAddr.isUnspecified()){
+        	newBurst->destAddr = retAddr;
+        	burstList[retAddr] = *newBurst;
+        }
     } else
     	retAddr = currentBurst->destAddr;
     if (!retAddr.isUnspecified()){
@@ -427,7 +432,6 @@ IPvXAddress ChatApp::generateBurst(struct Burst* currentBurst)
     	payload->setTimestamp();
     	emit(sentPkSignal, payload);
         socket.sendTo(payload, retAddr, destPort);
-    	//sendToUDP(payload, localPort, retAddr, destPort);
     	numSent++;
     }
     return retAddr;
