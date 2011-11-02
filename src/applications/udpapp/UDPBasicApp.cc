@@ -38,6 +38,7 @@ void UDPBasicApp::initialize(int stage)
     counter = 0;
     numSent = 0;
     numReceived = 0;
+    numUnsent = 0;
     WATCH(numSent);
     WATCH(numReceived);
     sentPkSignal = registerSignal("sentPk");
@@ -50,11 +51,9 @@ void UDPBasicApp::initialize(int stage)
     cStringTokenizer tokenizer(destAddrs);
     const char *token;
 
-    while ((token = tokenizer.nextToken()) != NULL)
-        destAddresses.push_back(IPvXAddressResolver().resolve(token));
-
-    if (destAddresses.empty())
-        return;
+    addressGeneratorModule = dynamic_cast<AddressGenerator*>(getParentModule()->getModuleByRelativePath("addressGenerator"));
+    if (addressGeneratorModule == 0)
+    	error("Wrong path to the address generator!?!?");
 
     socket.setOutputGate(gate("udpOut"));
     socket.bind(localPort);
@@ -65,19 +64,30 @@ void UDPBasicApp::initialize(int stage)
         error("Invalid startTime/stopTime parameters");
 
     cMessage *timerMsg = new cMessage("sendTimer");
-    scheduleAt(startTime, timerMsg);
+    if (startTime >= 0) // do not start if startTime < 0
+    	scheduleAt(startTime, timerMsg);
 }
 
 void UDPBasicApp::finish()
 {
     recordScalar("packets sent", numSent);
     recordScalar("packets received", numReceived);
+    recordScalar("packets unsent", numUnsent);
+
 }
 
 IPvXAddress UDPBasicApp::chooseDestAddr()
 {
-    int k = intrand(destAddresses.size());
-    return destAddresses[k];
+	std::map<IPv4Address, int> currentList = addressGeneratorModule->gatherAddresses();
+	if (currentList.empty())
+		return IPvXAddress();
+	int rnd = uniform(0,currentList.size());
+	std::map<IPv4Address, int>::iterator ii = currentList.begin();
+	while (rnd > 0){
+		ii++;
+		rnd--;
+	}
+	return ii->first;
 }
 
 cPacket *UDPBasicApp::createPacket()
@@ -92,9 +102,12 @@ cPacket *UDPBasicApp::createPacket()
 
 void UDPBasicApp::sendPacket()
 {
-    cPacket *payload = createPacket();
     IPvXAddress destAddr = chooseDestAddr();
-
+    if (destAddr.isUnspecified()){
+    	numUnsent++;
+    	return;
+    }
+    cPacket *payload = createPacket();
     emit(sentPkSignal, payload);
     socket.sendTo(payload, destAddr, destPort);
     numSent++;

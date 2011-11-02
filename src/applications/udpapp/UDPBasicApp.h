@@ -23,6 +23,7 @@
 #include <vector>
 #include "INETDefs.h"
 #include "UDPSocket.h"
+#include "AddressGenerator.h"
 
 
 /**
@@ -41,6 +42,7 @@ class INET_API UDPBasicApp : public cSimpleModule
     // statistics
     int numSent;
     int numReceived;
+    int numUnsent;
 
     static simsignal_t sentPkSignal;
     static simsignal_t rcvdPkSignal;
@@ -50,6 +52,7 @@ class INET_API UDPBasicApp : public cSimpleModule
     virtual cPacket *createPacket();
     virtual void sendPacket();
     virtual void processPacket(cPacket *msg);
+    AddressGenerator * addressGeneratorModule;
 
   protected:
     virtual int numInitStages() const {return 4;}

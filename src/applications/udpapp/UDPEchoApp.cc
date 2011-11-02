@@ -25,20 +25,35 @@
 Define_Module(UDPEchoApp);
 
 simsignal_t UDPEchoApp::roundTripTimeSignal = SIMSIGNAL_NULL;
+simsignal_t UDPEchoApp::sentAnswerBytesSignal = SIMSIGNAL_NULL;
+int UDPEchoApp::requestsSent;
+int UDPEchoApp::repliesReceived;
+int UDPEchoApp::repliesSent;
+int UDPEchoApp::globalUnsent;
 
 void UDPEchoApp::initialize(int stage)
 {
     UDPBasicApp::initialize(stage);
 
-    if (stage == 0)
-    {
-        roundTripTimeSignal = registerSignal("roundTripTime");
-    }
+    roundTripTimeSignal = registerSignal("roundTripTime");
+//    sentAnswerBytesSignal = registerSignal("sentAnswerBytes");
+    requestsSent = 0;
+    repliesReceived = 0;
+    repliesSent = 0;
+    globalUnsent = 0;
+
 }
 
-void UDPEchoApp::finish()
+
+/*
+ *
+ *IPvXAddress UDPEchoApp::chooseDestAddr()
 {
+    if (destAddresses.size() == 1)
+        return destAddresses[0];
+    return destAddresses[intrand(destAddresses.size())];
 }
+*/
 
 cPacket *UDPEchoApp::createPacket()
 {
@@ -47,7 +62,7 @@ cPacket *UDPEchoApp::createPacket()
 
     UDPEchoAppMsg *message = new UDPEchoAppMsg(msgName);
     message->setByteLength(par("messageLength").longValue());
-
+    requestsSent++;
     return message;
 }
 
@@ -70,7 +85,11 @@ void UDPEchoApp::processPacket(cPacket *msg)
         IPvXAddress srcAddr = ctrl->getSrcAddr();
         int srcPort = ctrl->getSrcPort();
         delete ctrl;
-
+        std::string newName(packet->getName());
+        newName.append("-Reply");
+        packet->setName(newName.c_str());
+        emit(sentAnswerBytesSignal, (long)(packet->getByteLength()));
+        repliesSent++; // static
         emit(sentPkSignal, packet);
         socket.sendTo(packet, srcAddr, srcPort);
     }
@@ -80,8 +99,21 @@ void UDPEchoApp::processPacket(cPacket *msg)
         simtime_t rtt = simTime() - packet->getCreationTime();
         EV << "RTT: " << rtt << "\n";
         emit(roundTripTimeSignal, rtt);
+        repliesReceived++; // static
         delete msg;
     }
     numReceived++;
+}
+
+void UDPEchoApp::finish()
+{
+	UDPBasicApp::finish();
+    recordScalar("RequestsSent", requestsSent);
+    recordScalar("RepliesSent", repliesSent);
+    recordScalar("RepliesReceived", repliesReceived);
+    recordScalar("Global packets arrived ratio", (double)repliesSent/(double)requestsSent);
+    recordScalar("Global packets acked ratio", (double)repliesReceived/(double)requestsSent);
+    globalUnsent += numUnsent;
+    recordScalar("RequestsUnSent", globalUnsent);
 }
 

@@ -36,8 +36,16 @@ class UDPEchoApp : public UDPBasicApp
     virtual void initialize(int stage);
     virtual void finish();
 
+
+    // global cumulative statistics for all the applications
   protected:
     static simsignal_t roundTripTimeSignal;
+    static simsignal_t sentAnswerBytesSignal;
+    static int requestsSent;
+    static int repliesSent;
+    static int repliesReceived;
+    static int globalUnsent;
+
 };
 
 #endif
