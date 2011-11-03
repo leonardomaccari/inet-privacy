@@ -52,6 +52,7 @@ simsignal_t UDP::sentPkSignal = SIMSIGNAL_NULL;
 simsignal_t UDP::passedUpPkSignal = SIMSIGNAL_NULL;
 simsignal_t UDP::droppedPkWrongPortSignal = SIMSIGNAL_NULL;
 simsignal_t UDP::droppedPkBadChecksumSignal = SIMSIGNAL_NULL;
+simsignal_t UDP::rcvdPkHCountSignal = SIMSIGNAL_NULL;
 
 static std::ostream & operator<<(std::ostream & os, const UDP::SockDesc& sd)
 {
@@ -253,6 +254,7 @@ void UDP::processUDPPacket(UDPPacket *udpPacket)
     if (dynamic_cast<IPv4ControlInfo *>(ctrl)!=NULL)
     {
         IPv4ControlInfo *ctrl4 = (IPv4ControlInfo *)ctrl;
+        emit(rcvdPkHCountSignal, 32-ctrl4->getTimeToLive());
         srcAddr = ctrl4->getSrcAddr();
         destAddr = ctrl4->getDestAddr();
         interfaceId = ctrl4->getInterfaceId();

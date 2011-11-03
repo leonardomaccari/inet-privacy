@@ -65,6 +65,7 @@ simple UDP like IUDP
         @statistic[passedUpPk](title="packets passed up"; record=count,"vector(count)"; interpolationmode=none);
         @statistic[droppedPkWrongPort](title="packets dropped (wrong port)"; record=count,"vector(count)"; interpolationmode=none);
         @statistic[droppedPkBadChecksum](title="packets dropped (checksum error)"; record=count,"vector(count)"; interpolationmode=none);
+        @statistic[rcvdPkHcount](title="Hopcount for received packets"; record=histogram);
 
     gates:
         input appIn[] @labels(UDPControlInfo/down);
