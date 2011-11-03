@@ -24,5 +24,6 @@ cplusplus {{
 packet UDPEchoAppMsg
 {
     bool isRequest = true;
+    long  counter;
 }
 

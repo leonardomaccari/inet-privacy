@@ -30,6 +30,8 @@ int UDPEchoApp::requestsSent;
 int UDPEchoApp::repliesReceived;
 int UDPEchoApp::repliesSent;
 int UDPEchoApp::globalUnsent;
+std::set<int> UDPEchoApp::repliedRequests;
+std::set<int> UDPEchoApp::receivedReplies;
 
 void UDPEchoApp::initialize(int stage)
 {
@@ -41,6 +43,9 @@ void UDPEchoApp::initialize(int stage)
     repliesReceived = 0;
     repliesSent = 0;
     globalUnsent = 0;
+    copyReceived = 0;
+    WATCH_SET(receivedReplies);
+    WATCH_SET(repliedRequests);
 
 }
 
@@ -59,8 +64,8 @@ cPacket *UDPEchoApp::createPacket()
 {
     char msgName[32];
     sprintf(msgName, "UDPEcho-%d", counter++);
-
     UDPEchoAppMsg *message = new UDPEchoAppMsg(msgName);
+    message->setCounter(counter);
     message->setByteLength(par("messageLength").longValue());
     requestsSent++;
     return message;
@@ -80,6 +85,15 @@ void UDPEchoApp::processPacket(cPacket *msg)
     if (packet->getIsRequest())
     {
         // send back as response
+
+    	if (repliedRequests.find(packet->getCounter()) != repliedRequests.end()){
+    		copyReceived++;
+    		delete packet;
+    		return;
+    	}
+    	repliedRequests.insert(packet->getCounter());
+    	if (repliedRequests.size() > CACHE_SIZE)
+    		repliedRequests.erase(repliedRequests.begin());
         packet->setIsRequest(false);
         UDPDataIndication *ctrl = check_and_cast<UDPDataIndication *>(packet->removeControlInfo());
         IPvXAddress srcAddr = ctrl->getSrcAddr();
@@ -90,12 +104,20 @@ void UDPEchoApp::processPacket(cPacket *msg)
         packet->setName(newName.c_str());
         emit(sentAnswerBytesSignal, (long)(packet->getByteLength()));
         repliesSent++; // static
+        numSent++; // update also UDPBasicApp counter
         emit(sentPkSignal, packet);
         socket.sendTo(packet, srcAddr, srcPort);
     }
     else
     {
         // response packet: compute round-trip time
+    	if (receivedReplies.find(packet->getCounter()) != receivedReplies.end()){
+    	    		delete packet;
+    	    		return;
+    	    	}
+    	receivedReplies.insert(packet->getCounter());
+      	if (receivedReplies.size() > CACHE_SIZE)
+        		receivedReplies.erase(receivedReplies.begin());
         simtime_t rtt = simTime() - packet->getCreationTime();
         EV << "RTT: " << rtt << "\n";
         emit(roundTripTimeSignal, rtt);
@@ -104,12 +126,12 @@ void UDPEchoApp::processPacket(cPacket *msg)
     }
     numReceived++;
 }
-
 void UDPEchoApp::finish()
 {
 	UDPBasicApp::finish();
     recordScalar("RequestsSent", requestsSent);
     recordScalar("RepliesSent", repliesSent);
+    recordScalar("Copies received", copyReceived);
     recordScalar("RepliesReceived", repliesReceived);
     recordScalar("Global packets arrived ratio", (double)repliesSent/(double)requestsSent);
     recordScalar("Global packets acked ratio", (double)repliesReceived/(double)requestsSent);

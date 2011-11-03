@@ -258,7 +258,7 @@ class INET_API Ieee80211Mac : public WirelessMacBase, public INotifiable
      */
     //@{
     /** @brief Called by the NotificationBoard whenever a change occurs we're interested in */
-    virtual void receiveChangeNotification(int category, const cObject * details);
+    virtual void receiveChangeNotification(int category, const cPolymorphic * details);
 
     /** @brief Handle commands (msg kind+control info) coming from upper layers */
     virtual void handleCommand(cMessage *msg);
@@ -371,7 +371,7 @@ class INET_API Ieee80211Mac : public WirelessMacBase, public INotifiable
     virtual Ieee80211DataOrMgmtFrame *getCurrentTransmission();
 
     /** @brief Reset backoff, backoffPeriod and retryCounter for IDLE state */
-    virtual void resetStateVariables();
+    virtual void resetStateVariables(bool retry = true);
 
     /** @brief Used by the state machine to identify medium state change events.
         This message is currently optimized away and not sent through the kernel. */

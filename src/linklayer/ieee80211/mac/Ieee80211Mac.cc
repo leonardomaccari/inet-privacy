@@ -327,7 +327,7 @@ void Ieee80211Mac::handleLowerMsg(cPacket *msg)
         delete msg;
 }
 
-void Ieee80211Mac::receiveChangeNotification(int category, const cObject *details)
+void Ieee80211Mac::receiveChangeNotification(int category, const cPolymorphic *details)
 {
     Enter_Method_Silent();
     printNotificationBanner(category, details);
@@ -907,13 +907,13 @@ Ieee80211Frame *Ieee80211Mac::setBasicBitrate(Ieee80211Frame *frame)
 void Ieee80211Mac::finishCurrentTransmission()
 {
     popTransmissionQueue();
-    resetStateVariables();
+    resetStateVariables(false);
 }
 
 void Ieee80211Mac::giveUpCurrentTransmission()
 {
     popTransmissionQueue();
-    resetStateVariables();
+    resetStateVariables(false);
     numGivenUp++;
 }
 
@@ -949,14 +949,16 @@ void Ieee80211Mac::setMode(Mode mode)
     this->mode = mode;
 }
 
-void Ieee80211Mac::resetStateVariables()
+void Ieee80211Mac::resetStateVariables(bool retry)
 {
     backoffPeriod = 0;
-    retryCounter = 0;
+    if(!retry)
+    	retryCounter = 0;
 
     if (!transmissionQueue.empty()) {
         backoff = true;
-        getCurrentTransmission()->setRetry(false);
+        if(!retry)
+        	getCurrentTransmission()->setRetry(false);
     }
     else {
         backoff = false;

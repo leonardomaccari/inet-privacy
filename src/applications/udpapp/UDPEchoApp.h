@@ -23,6 +23,9 @@
 
 #include "UDPBasicApp.h"
 
+// the size of the cache buffer I keep to detect copies
+#define CACHE_SIZE 10
+
 /**
  * UDP application. See NED for more info.
  */
@@ -39,12 +42,16 @@ class UDPEchoApp : public UDPBasicApp
 
     // global cumulative statistics for all the applications
   protected:
+    static std::set<int> repliedRequests;
+    static std::set<int> receivedReplies;
+
     static simsignal_t roundTripTimeSignal;
     static simsignal_t sentAnswerBytesSignal;
     static int requestsSent;
     static int repliesSent;
     static int repliesReceived;
     static int globalUnsent;
+    int copyReceived;
 
 };
 
