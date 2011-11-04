@@ -36,6 +36,7 @@
 #include "INotifiable.h"
 #include "IPv4Address.h"
 #include "IRoutingTable.h"
+#include "firewallStrategy.h"
 
 class IInterfaceTable;
 class NotificationBoard;
@@ -72,6 +73,15 @@ class RoutingTableParser;
  *
  * @see InterfaceEntry, IPv4InterfaceData, IPv4Route
  */
+
+
+
+typedef std::vector<IPv4RouteRule *> RoutingRule;
+typedef std::map<uint8_t, RoutingRule> RuleSetMap;
+
+#define MAX_RULESET_NUMBER 256
+//
+
 class INET_API RoutingTable: public cSimpleModule, public IRoutingTable, protected INotifiable
 {
   protected:
@@ -80,6 +90,9 @@ class INET_API RoutingTable: public cSimpleModule, public IRoutingTable, protect
 
     IPv4Address routerId;
     bool IPForward;
+    bool firewallOn;
+    bool routeChanged;
+    firewallStrategy * strategy;
 
     // DSDV parameters
     simtime_t timetolive_routing_entry;
@@ -89,10 +102,17 @@ class INET_API RoutingTable: public cSimpleModule, public IRoutingTable, protect
     typedef std::vector<IPv4Route *> RouteVector;
     RouteVector routes;          // Unicast route array
     RouteVector multicastRoutes; // Multicast route array
+    cOutVector rSetSize;
 
     // routing cache: maps destination address to the route
     typedef std::map<IPv4Address, const IPv4Route *> RoutingCache;
     mutable RoutingCache routingCache;
+    typedef std::vector<IPv4RouteRule *> RoutingRule;
+    RoutingRule outputRules;
+    RoutingRule inputRules;
+    RuleSetMap ruleMap;
+    //@FIXME define an ordering function for rules and use a map
+    // to store all the rules, avoid vectors to speed-up search
 
     // local addresses cache (to speed up isLocalAddress())
     typedef std::set<IPv4Address> AddressSet;
@@ -100,6 +120,22 @@ class INET_API RoutingTable: public cSimpleModule, public IRoutingTable, protect
     // JcM add: to handle the local broadcast address
     mutable AddressSet localBroadcastAddresses;
 
+    static simsignal_t routingTableSize;
+    static simsignal_t firewallTableSize;
+    static simsignal_t hopCount;
+    static simsignal_t ruleSetDistribution;
+    static simsignal_t inputRulesMatch;
+    static simsignal_t outputRulesMatch;
+    static simsignal_t outputRulesMiss;
+
+    static int outputMatched;
+    static int outputMissed;
+    static int inputMatched;
+    static int inputMatched1hop;
+    static int inputMissed;
+    static int toBeFiltered;
+
+    cMessage * updateStats;
   protected:
     // set IPv4 address etc on local loopback
     virtual void configureLoopbackForIPv4();
@@ -269,9 +305,7 @@ class INET_API RoutingTable: public cSimpleModule, public IRoutingTable, protect
      * Utility function: Returns a vector of all addresses of the node.
      */
     virtual std::vector<IPv4Address> gatherAddresses() const;
-
     virtual std::map<IPv4Address, int> gatherRoutes() const;
-
 
     //@}
     virtual void setTimeToLiveRoutingEntry(simtime_t a){timetolive_routing_entry = a;}
@@ -279,6 +313,32 @@ class INET_API RoutingTable: public cSimpleModule, public IRoutingTable, protect
     // Dsdv time to live test entry
     virtual void dsdvTestAndDelete();
     virtual const bool testValidity(const IPv4Route *entry) const;
+    // IPv4 tables rules
+    virtual void addRule(bool output, IPv4RouteRule *entry);
+    virtual void delRule(IPv4RouteRule *entry);
+    // delete all rules that have a specific destination address
+    void delRule(bool output, IPv4Address destAddress);
+
+    /**
+    * Adds a rule in the stored rulesets. Does not enforce it. All stored rules
+    * will go into output
+    */
+    virtual void storeRule(IPv4RouteRule *entry, uint8_t rulesetCode);
+    virtual void delStoredRuleSet(uint8_t rSet);
+    // enforce our ruleset in input chain
+    virtual void enforceRuleSet(bool output, int rSet);
+
+    virtual const IPv4RouteRule * getRule(bool output, int index) const;
+    virtual int getNumRules(bool output);
+    virtual IPv4RouteRule * findRule(bool output, int prot,
+    		int sPort, const IPv4Address &srcAddr, int dPort,
+    		const IPv4Address &destAddr, const InterfaceEntry *,
+    		int ttl, bool activeOnly);
+    void refreshRuleset();
+    void finish();
+
+    friend class firewallStrategy;
+
 
 };
 

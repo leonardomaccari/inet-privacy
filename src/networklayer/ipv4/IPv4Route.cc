@@ -31,6 +31,8 @@ IPv4Route::IPv4Route()
     metric = 0;
     type = DIRECT;
     source = MANUAL;
+    ruleSet = 0;
+
 }
 
 std::string IPv4Route::info() const
@@ -55,6 +57,7 @@ std::string IPv4Route::info() const
         case MANET:        out << " MANET"; break;
         default:           out << " ???"; break;
     }
+    out << " RULESET-" << (int)ruleSet;
 
     return out.str();
 }

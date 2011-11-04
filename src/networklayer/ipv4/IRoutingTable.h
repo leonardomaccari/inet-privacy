@@ -24,6 +24,7 @@
 
 #include "IPv4Address.h"
 #include "IPv4Route.h"  // not strictly required, but most clients will need it anyway
+#include "IPv4RouteRule.h"
 
 /** Returned by IRoutingTable as the result of multicast routing */
 struct MulticastRoute
@@ -185,6 +186,33 @@ class INET_API IRoutingTable
     virtual simtime_t getTimeToLiveRoutingEntry() = 0;
     virtual void dsdvTestAndDelete() = 0;
     virtual const bool testValidity(const IPv4Route *entry) const = 0;
+
+
+    // Rules (similar to linux iptables)
+    virtual void addRule(bool output, IPv4RouteRule *entry) = 0;
+    virtual void delRule(IPv4RouteRule *entry) = 0;
+
+    /**
+    * Adds a rule in the stored rulesets. Does not enforce it. All stored rules
+    * will go into output.
+    * @FIXME this should not be here, firewalling should be separated
+    * from routing, using hooks as in linux kernel.
+    */
+    virtual void storeRule(IPv4RouteRule *entry, uint8_t rulesetCode) = 0;
+    virtual void delStoredRuleSet(uint8_t rulesetCode) = 0;
+
+    // enforce a specific ruleset
+    virtual void enforceRuleSet(bool output, int rSet) = 0;
+    virtual void refreshRuleset() = 0;
+
+
+    virtual const IPv4RouteRule * getRule(bool output, int index) const = 0;
+    virtual int getNumRules(bool output) = 0;
+    virtual IPv4RouteRule * findRule(bool output, int prot, int sPort,
+                                     const IPv4Address &srcAddr, int dPort,
+                                     const IPv4Address &destAddr, const InterfaceEntry *,
+                                     int ttl, bool activeOnly) = 0; // const removed, needed for statistics
+
 };
 
 #endif

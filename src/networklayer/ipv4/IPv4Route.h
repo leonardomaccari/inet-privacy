@@ -53,6 +53,8 @@ class INET_API IPv4Route : public cObject
         MANET2,       ///< managed by manet, search approximate address
     };
 
+    std::vector<int> hitQueue;
+    double hitAvg;
   protected:
     IPv4Address host;     ///< Destination
     IPv4Address netmask;  ///< Route mask
@@ -66,7 +68,7 @@ class INET_API IPv4Route : public cObject
     unsigned int sequencenumber;
     //Time of routing table entry creation
     simtime_t installtime;
-
+    uint8_t ruleSet;
 
   private:
     // copying not supported: following are private and also left undefined
@@ -86,7 +88,8 @@ class INET_API IPv4Route : public cObject
     void setType(RouteType type)  {this->type = type;}
     void setSource(RouteSource source)  {this->source = source;}
     void setMetric(int metric)  {this->metric = metric;}
-
+    void setRuleSet(uint8_t set)  {this->ruleSet = set;}
+    int getRuleSet() const {return this->ruleSet;}
     /** Destination address prefix to match */
     IPv4Address getHost() const {return host;}
 

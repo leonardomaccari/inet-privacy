@@ -35,8 +35,32 @@
 
 Define_Module(RoutingTable);
 
+#define LOGTIME 1
+simsignal_t RoutingTable::routingTableSize = SIMSIGNAL_NULL;
+simsignal_t RoutingTable::firewallTableSize = SIMSIGNAL_NULL;
+simsignal_t RoutingTable::hopCount = SIMSIGNAL_NULL;
+simsignal_t RoutingTable::ruleSetDistribution = SIMSIGNAL_NULL;
+simsignal_t RoutingTable::inputRulesMatch = SIMSIGNAL_NULL;
+simsignal_t RoutingTable::outputRulesMatch = SIMSIGNAL_NULL;
+simsignal_t RoutingTable::outputRulesMiss= SIMSIGNAL_NULL;
+
+int RoutingTable::inputMissed;
+int RoutingTable::inputMatched;
+int RoutingTable::outputMissed;
+int RoutingTable::outputMatched;
+int RoutingTable::toBeFiltered;
+
+
+Define_Module(RoutingTable);
+
 
 std::ostream& operator<<(std::ostream& os, const IPv4Route& e)
+{
+    os << e.info();
+    return os;
+};
+
+std::ostream& operator<<(std::ostream& os, const IPv4RouteRule& e)
 {
     os << e.info();
     return os;
@@ -55,6 +79,21 @@ RoutingTable::~RoutingTable()
         delete routes[i];
     for (unsigned int i=0; i<multicastRoutes.size(); i++)
         delete multicastRoutes[i];
+    while (!inputRules.empty())
+    {
+        delete inputRules.back();
+        inputRules.pop_back();
+    }
+    while (!outputRules.empty())
+    {
+        delete outputRules.back();
+        outputRules.pop_back();
+    }
+    if(strategy){
+    	delete strategy;
+    }
+    cancelAndDelete(updateStats);
+
 }
 
 void RoutingTable::initialize(int stage)
@@ -72,11 +111,33 @@ void RoutingTable::initialize(int stage)
         nb->subscribe(this, NF_INTERFACE_STATE_CHANGED);
         nb->subscribe(this, NF_INTERFACE_CONFIG_CHANGED);
         nb->subscribe(this, NF_INTERFACE_IPv4CONFIG_CHANGED);
+        inputMissed = 0;
+        inputMatched = 0;
+        outputMatched = 0;
+        outputMissed = 0;
+        toBeFiltered = 0;
+        routeChanged = false;
+        rSetSize.setName("Enforced ruleset size");
+        strategy = firewallStrategy::getStrategy(par("firewallStrategy"), routes, outputRules);
+        strategy->setMaxSize(par("firewallRuleSetSize"));
+        strategy->routingTable = this;
+        strategy->setMPRThreshold(par("firewallMPRThreshold"));
 
         WATCH_PTRVECTOR(routes);
         WATCH_PTRVECTOR(multicastRoutes);
+        WATCH_PTRVECTOR(outputRules);
+        WATCH_PTRVECTOR(inputRules);
+
         WATCH(IPForward);
         WATCH(routerId);
+        routingTableSize = registerSignal("routingTableSize");
+        firewallTableSize = registerSignal("firewallTableSize");
+        hopCount= registerSignal("hopCount");
+        ruleSetDistribution= registerSignal("ruleSetDistribution");
+        inputRulesMatch = registerSignal("inputRulesMatch");
+        outputRulesMatch = registerSignal("outputRulesMatch");
+        outputRulesMiss = registerSignal("outputRulesMiss");
+
     }
     else if (stage==1)
     {
@@ -111,7 +172,26 @@ void RoutingTable::initialize(int stage)
         // we don't use notifications during initialize(), so we do it manually.
         // Should be in stage=3 because autoconfigurator runs in stage=2.
         updateNetmaskRoutes();
+        const char *filename = par("firewallFile");
+        double probFirewallOn = par("probFirewallOn");
+        if (uniform(0,1)> probFirewallOn)
+        	firewallOn = false;
+        else
+        	firewallOn = true;
 
+
+        RoutingTableParser parser(ift, this);
+        if (*filename && parser.readRoutingTableFromFile(filename)==-1)
+            error("Error reading firewall rules file %s", filename);
+        for(RuleSetMap::iterator ii = ruleMap.begin();
+        		ii != ruleMap.end(); ii++){
+        	RoutingRule &RuleSet =  ii->second; // this is just to have more meaningful
+        									   // names in the GUI for the watched vectors
+        	WATCH_PTRVECTOR(RuleSet);
+        }
+
+        updateStats = new cMessage("updateStats");
+        scheduleAt(simTime()+1, updateStats);
         //printRoutingTable();
     }
 }
@@ -160,7 +240,39 @@ void RoutingTable::updateDisplayString()
 
 void RoutingTable::handleMessage(cMessage *msg)
 {
-    throw cRuntimeError(this, "This module doesn't process messages");
+	if (msg->isSelfMessage())
+	{
+	    emit(routingTableSize,getNumRoutes());
+	    scheduleAt(simTime()+LOGTIME, msg);
+
+	    if(strncmp(par("firewallStrategy").stringValue(),"NONE",strlen("NONE")) != 0 ){
+	    	for (RoutingRule::iterator ii = outputRules.begin();
+	    			ii!=outputRules.end(); ii++){
+	    		(*ii)->hitAvg = 0;
+	    		for (std::vector<int>::iterator jj = (*ii)->hitQueue.begin();
+	    				jj != (*ii)->hitQueue.end(); jj++)
+	    		{
+	    			(*ii)->hitAvg += *jj;
+	    		}
+	    		(*ii)->hitAvg = (*ii)->hitAvg/HITQUEUE_SIZE;
+	    		(*ii)->hitQueue.erase((*ii)->hitQueue.begin());
+	    		(*ii)->hitQueue.push_back(0);
+	    	}
+	    }
+	    for (int i=0; i<getNumRoutes(); i++){
+	    	if(!getRoute(i)->getInterface()->isLoopback()){ // exclude loopback
+	    		emit(hopCount, getRoute(i)->getMetric());
+//#define DEBUG
+#ifdef DEBUG
+	    		std::cout << "XXX " << getRoute(i)->getHost() <<  " " << (int)(getRoute(i)->getRuleSet()) << std::endl;
+	        	emit(ruleSetDistribution, (int)(getRoute(i)->getRuleSet()));
+	        	// use some script-fu to assure that ruleSet distribution is as expected,
+	        	// somwthing like: ./run -c TestFirewall -u Cmdenv | grep XXX | sort | uniq
+#endif
+	    	}
+	    }
+	}else
+		throw cRuntimeError(this, "This module doesn't process messages");
 }
 
 void RoutingTable::receiveChangeNotification(int category, const cObject *details)
@@ -241,6 +353,7 @@ std::vector<IPv4Address> RoutingTable::gatherAddresses() const
         addressvector.push_back(ift->getInterface(i)->ipv4Data()->getIPAddress());
     return addressvector;
 }
+
 
 std::map<IPv4Address, int> RoutingTable::gatherRoutes() const
 {
@@ -525,6 +638,7 @@ const IPv4Route *RoutingTable::findRoute(const IPv4Address& target, const IPv4Ad
 void RoutingTable::addRoute(const IPv4Route *entry)
 {
     Enter_Method("addRoute(...)");
+    routeChanged = true;
 
     // check for null address and default route
     if (entry->getHost().isUnspecified() != entry->getNetmask().isUnspecified())
@@ -548,6 +662,19 @@ void RoutingTable::addRoute(const IPv4Route *entry)
     else
         multicastRoutes.push_back(const_cast<IPv4Route*>(entry));
 
+    RuleSetMap::iterator newSet = ruleMap.find(entry->getRuleSet());
+    if (newSet == ruleMap.end() && entry->getRuleSet() != 0)
+    	error("This node must use ruleset %d that it doesn't know", entry->getRuleSet());
+    else if (entry->getRuleSet() != 0){
+    	for (RoutingRule::iterator jj = newSet->second.begin(); jj!=newSet->second.end(); jj++){
+    		(*jj)->setDestAddress(entry->getHost());
+    		(*jj)->setDestNetmask(entry->getNetmask());
+    		(*jj)->hc = entry->getMetric();
+    		addRule(true, *jj); // rulesets add rules only in output
+    	}
+    }
+
+
     invalidateCache();
     updateDisplayString();
 
@@ -558,12 +685,13 @@ void RoutingTable::addRoute(const IPv4Route *entry)
 bool RoutingTable::deleteRoute(const IPv4Route *entry)
 {
     Enter_Method("deleteRoute(...)");
-
+    routeChanged = true;
     RouteVector::iterator i = std::find(routes.begin(), routes.end(), entry);
     if (i!=routes.end())
     {
         nb->fireChangeNotification(NF_IPv4_ROUTE_DELETED, entry); // rather: going to be deleted
         routes.erase(i);
+        delRule(true, entry->getHost()); // delete all associated rules
         delete entry;
         invalidateCache();
         updateDisplayString();
@@ -630,3 +758,286 @@ void RoutingTable::updateNetmaskRoutes()
     updateDisplayString();
 }
 
+
+
+void RoutingTable::addRule(bool output, IPv4RouteRule *entry)
+{
+// first, find the rule if exist
+	IPv4RouteRule * rule;
+    if((rule = findRule(output, entry->getProtocol(), entry->getSrcPort(),
+    		entry->getSrcAddress(), entry->getDestPort(),
+    		entry->getDestAddress(), entry->getInterface(), 0, false)) != 0){
+    	(rule)->activate();
+    	if(strncmp(par("firewallStrategy").stringValue(),"NONE",strlen("NONE")) == 0 )
+    		(rule)->enforce();
+    	(rule)->hc = entry->hc;
+    	return;
+    }
+
+    IPv4RouteRule * newRule = new IPv4RouteRule;
+    memcpy(newRule, entry, sizeof(IPv4RouteRule));
+    newRule->activate();
+    for (int i=0; i < HITQUEUE_SIZE; i++)
+        	newRule->hitQueue.push_back(0);
+
+    if (output)
+    {
+        outputRules.push_back(newRule);
+    }
+    else
+    {
+        inputRules.push_back(newRule);
+    }
+
+}
+
+void RoutingTable::delRule(IPv4RouteRule *entry)
+{
+	for (unsigned int i=0; i<outputRules.size(); i++)
+		if (outputRules[i] == entry)
+		{
+			entry->deactivate();
+			// do not unenforce(), if the rule is put back it must be running, only firewallingStrategy changes enforcement
+
+			//delete entry;
+			//outputRules.erase(outputRules.begin()+i);
+			break;
+		}
+	for (unsigned int i=0; i<inputRules.size(); i++)
+		if (inputRules[i] == entry)
+		{
+			entry->deactivate();
+			//delete entry;
+			//inputRules.erase(inputRules.begin()+i);
+			break;
+		}
+}
+void RoutingTable::delRule(bool output, IPv4Address destAddress)
+{
+	if(output)
+	{
+		for (unsigned int i=0; i<outputRules.size(); i++)
+			if (outputRules[i]->getDestAddress() == destAddress)
+			{
+				outputRules[i]->deactivate();
+				//delete entry;
+				//outputRules.erase(outputRules.begin()+i);
+				break;
+			}
+	} else {
+		for (unsigned int i=0; i<inputRules.size(); i++)
+			if (inputRules[i]->getDestAddress() == destAddress)
+			{
+				outputRules[i]->deactivate();
+				//delete entry;
+				//inputRules.erase(inputRules.begin()+i);
+				break;
+			}
+	}
+}
+
+void RoutingTable::storeRule(IPv4RouteRule *entry, uint8_t rulesetCode){
+	ruleMap[rulesetCode].push_back(entry);
+}
+
+void RoutingTable::delStoredRuleSet(uint8_t rSet){
+	for(RoutingRule::iterator ii=ruleMap[rSet].begin();
+			ii != ruleMap[rSet].end(); ii++)
+		delete *ii;
+	ruleMap.erase(rSet);
+}
+
+void RoutingTable::enforceRuleSet(bool output, int rSet){
+
+	if (ruleMap.find(rSet) == ruleMap.end() && rSet != 0)
+		error("Trying to enforce an unknown `%d' ruleset", rSet);
+	for(RoutingRule::iterator ii=ruleMap[rSet].begin();
+			ii != ruleMap[rSet].end(); ii++){
+	    IPv4RouteRule * newRule = new IPv4RouteRule;
+	    memcpy(newRule, (*ii), sizeof(IPv4RouteRule));
+		newRule->setDestAddress(routerId);
+		newRule->activate();
+	    if(strncmp(par("firewallStrategy").stringValue(),"NONE",strlen("NONE")) == 0 )
+			newRule->enforce();
+		addRule(output,newRule);
+	}
+}
+const IPv4RouteRule * RoutingTable::getRule(bool output, int index) const
+{
+    if (output)
+    {
+        if (index < (int)outputRules.size())
+            return outputRules[index];
+        else
+            return NULL;
+    }
+    else
+    {
+        if (index < (int)inputRules.size())
+            return inputRules[index];
+        else
+            return NULL;
+    }
+}
+
+int RoutingTable::getNumRules(bool output)
+{
+    if (output)
+        return outputRules.size();
+    else
+        return inputRules.size();
+}
+
+ IPv4RouteRule * RoutingTable::findRule(bool output, int prot,
+		int sPort, const IPv4Address &srcAddr, int dPort,
+		const IPv4Address &destAddr, const InterfaceEntry *iface,
+		int ttl, bool activeOnly)
+{
+    std::vector<IPv4RouteRule *>::const_iterator it;
+    std::vector<IPv4RouteRule *>::const_iterator endIt;
+
+
+    if (output)
+    {
+        it = outputRules.begin();
+        endIt = outputRules.end();
+    }
+    else
+    {
+        it = inputRules.begin();
+        endIt = inputRules.end();
+    }
+    while (it!=endIt)
+    {
+
+       IPv4RouteRule *e = (*it);
+       if(activeOnly && !e->isActive()){
+    	   /*
+       	   active rules are rules that are
+    	   corresponding to routes are known. Unactive rules
+    	   relate to rules that were known in the past but now
+    	   are unavailable. If a rule is unactive it means we do not
+    	   have an available route for it, so there is no miss to be
+    	   logged.
+    	   */
+    	   it++;
+    	   continue;
+       }
+
+       if (!srcAddr.isUnspecified() && !e->getSrcAddress().isUnspecified())
+       {
+           if (!IPv4Address::maskedAddrAreEqual(srcAddr, e->getSrcAddress(), e->getSrcNetmask()))
+           {
+               it++;
+               continue;
+           }
+       }
+       if (!destAddr.isUnspecified() && !e->getDestAddress().isUnspecified())
+       {
+    	   if (!e->getDestNetmask().isUnspecified()){
+    		   if (!IPv4Address::maskedAddrAreEqual(destAddr, e->getDestAddress(), e->getDestNetmask()))
+    		   {
+    			   it++;
+    			   continue;
+    		   }
+    	   }
+    	   else if(e->getDestAddress() != destAddr) {
+    			   it++;
+    			   continue;
+    	   }
+
+       }
+       if ((prot!=IP_PROT_NONE) && (e->getProtocol()!=IP_PROT_NONE) && (prot!=e->getProtocol()))
+       {
+           it++;
+           continue;
+       }
+       if ((sPort!=-1) && (e->getSrcPort()!=-1) && (sPort!=e->getSrcPort()))
+       {
+           it++;
+           continue;
+       }
+       if ((dPort!=-1) && (e->getDestPort()!=-1) && (dPort!=e->getDestPort()))
+       {
+           it++;
+           continue;
+       }
+       if ((iface!=NULL) && (e->getInterface()!=NULL) && (iface!=e->getInterface()))
+       {
+           it++;
+           continue;
+       }
+       if(output && activeOnly && !e->isEnforced()){
+    	   /*
+    	    * enforced rules are rules that the firewall strategy has chosen to
+    	    * be enforced now. A rule can be active&&(enforced||!enforced) or it can
+    	    * be non active. Only active rules can be enforced. If a rule is
+    	    * active and not enforced there is a miss logged.
+    	    *
+    	    * If firewall is off, we have the rules but we decide not to apply any,
+    	    * so its'always a miss.
+    	    */
+    	   it++;
+    	   if (output && firewallOn){ // if it is in output and firewall is on,
+    		   	   	   	   	   	   	  // rule is denforced, so we add to missed
+    		   outputMissed++;
+    		   this->emit(outputRulesMiss, 32-ttl);
+    		   if (ttl == 32)
+    			   toBeFiltered++;
+    	   }
+    	   e->hitQueue.back()++; // increase last second usage statistic
+    	   continue;
+       }
+       // found valid src address, dest address src port and dest port
+       if(ttl){ // needed only for statistics, overlaps with activeOnly
+    	   if (output && firewallOn){
+    		   outputMatched++;
+    		   this->emit(outputRulesMatch, 32-ttl);
+    		   if (ttl == 32)
+    			   toBeFiltered++;
+        	   e->hitQueue.back()++; // increase last second usage statistic
+    	   }
+    	   else if (output && !firewallOn){
+    		   outputMissed++;
+    		   this->emit(outputRulesMiss, 32-ttl);
+    		   if (ttl == 32)
+    			   toBeFiltered++;
+        	//   e->hitQueue.back()++; // do not increase last second usage statistic (firewall is off )
+    	   }
+    	   else if (!output){
+    		   inputMatched++;
+    		   this->emit(inputRulesMatch, 32-ttl);
+    	   }
+       }
+
+       if(!output) //always filter input traffic if we have rules
+    	   return e;
+       if(firewallOn) // firewall is on, return the corresponding rule
+    	   return e;
+       else if(!firewallOn && !activeOnly) //fw is off, but we look for a rule
+    	   	   	   	   	   	   	   	   	   //to add/delete, so return the rule
+    	   return e;
+       else
+    	   return NULL; // firewall is off and we look only for active rules
+       	   	   	   	    // (we are filtering), return off
+    }
+    return NULL;
+}
+
+void RoutingTable::refreshRuleset(){
+	if (routeChanged){
+		routeChanged = false;
+	    if(strncmp(par("firewallStrategy").stringValue(),"NONE",strlen("NONE")) != 0 )
+	    	rSetSize.record(strategy->reorganizeRules());
+	}
+}
+
+void RoutingTable::finish(){
+	double totalPackets = outputMatched+outputMissed;
+	recordScalar("outputMissedRatio", outputMissed/totalPackets);
+//	recordScalar("outputMatchedRatio", outputMatched/totalPackets);
+	recordScalar("outputMatchedRatio", outputMatched);
+
+	//recordScalar("inputMatchedRatio", inputMatched/(double)toBeFiltered); // with this, I need to know the number of sent packets per run that should be filtered
+	recordScalar("inputMatchedRatio", inputMatched); // with this I will compare inputmatch without firewall with inputmatch with more nodes filtering
+}

@@ -633,9 +633,13 @@ void ManetRoutingBase::omnet_chg_rte(const struct in_addr &dst, const struct in_
     omnet_chg_rte(dst.s_addr, gtwy.s_addr, netm.s_addr, hops, del_entry);
 }
 
+
+
 void ManetRoutingBase::omnet_chg_rte(const struct in_addr &dst, const struct in_addr &gtwy, const struct in_addr &netm,
                                       short int hops, bool del_entry, const struct in_addr &iface)
 {
+
+
     omnet_chg_rte(dst.s_addr, gtwy.s_addr, netm.s_addr, hops, del_entry, iface.s_addr);
 }
 
@@ -648,6 +652,12 @@ bool ManetRoutingBase::omnet_exist_rte(struct in_addr dst)
 }
 
 void ManetRoutingBase::omnet_chg_rte(const Uint128 &dst, const Uint128 &gtwy, const Uint128 &netm, short int hops, bool del_entry, const Uint128 &iface)
+{
+	omnet_chg_rte_f(dst, gtwy, netm,  hops,  del_entry, iface, 0);
+
+}
+void ManetRoutingBase::omnet_chg_rte_f(const Uint128 &dst, const Uint128 &gtwy, const Uint128 &netm,
+		short int hops, bool del_entry, const Uint128 &iface, int rset)
 {
     if (!isRegistered)
         opp_error("Manet routing protocol is not register");
@@ -729,6 +739,7 @@ void ManetRoutingBase::omnet_chg_rte(const Uint128 &dst, const Uint128 &gtwy, co
     /// Metric ("cost" to reach the destination)
     entry->setMetric(hops);
     /// Interface name and pointer
+    entry->setRuleSet(rset);
 
     entry->setInterface(getInterfaceWlanByAddress(iface));
 

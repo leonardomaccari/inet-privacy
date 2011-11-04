@@ -53,6 +53,21 @@ simple RoutingTable
                           // interface address; should be left empty ("") for hosts
         bool IPForward = default(true);  // turns IP forwarding on/off
         string routingFile = default("");  // routing table file name
+                string firewallFile = default("");
+        string firewallStrategy = default("NONE");
+        int firewallRuleSetSize = default(1000000000); // keep all rules by default 
+        int firewallMPRThreshold = default(-1);
+        
+        double probFirewallOn = default(1); // probability to have firewall On, needed for batch simulations
+        @statistic[routingTableSize](title="Routing table size"; record=vector); // routing table size logging
+        @statistic[firewallTableSize](title="Firewall table size"; record=vector); // routing table size logging
+        @statistic[hopCount](title="Route hopCount"; record=histogram); // routing table hopcount
+        @statistic[ruleSetDistribution](title="Rule Set Distribution"; record=histogram;); // routing table hopcount
+        @statistic[inputRulesMatch](title="Input rules matches"; record=histogram;); // input filter table matches
+        @statistic[outputRulesMatch](title="Output rules matches statistics"; record=histogram;); // output rules match statistics
+        @statistic[outputRulesMiss](title="Output rules missed statistics"; record=histogram;); // output rules match statistics
+        
+        
         @display("i=block/table");
 }
 
