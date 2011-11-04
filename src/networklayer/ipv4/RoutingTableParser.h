@@ -82,15 +82,17 @@ class INET_API RoutingTableParser
 
     // Return 1 if beginning of str1 and str2 is equal up to str2-len,
     // otherwise 0.
-    static int streq(const char *str1, const char *str2);
+    inline static int streq(const char *str1, const char *str2);
 
     // Skip blanks in string
-    static void skipBlanks(char *str, int &charptr);
-
+    inline static void skipBlanks(char *str, int &charptr);
+    // Jump a line below
+    inline void skipLine(char *str, int &charptr);
     // Copies the first word of src up to a space-char into dest
     // and appends \0, returns position of next space-char in src
     static int strcpyword(char *dest, const char *src);
-
+    // policies methods
+    virtual void parseRules(char *, int storeRules = -1);
 };
 
 
