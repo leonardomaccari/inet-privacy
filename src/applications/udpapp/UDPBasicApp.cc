@@ -51,6 +51,8 @@ void UDPBasicApp::initialize(int stage)
     cStringTokenizer tokenizer(destAddrs);
     const char *token;
 
+// FIXME: re-enable manual choice of addresses for each application. Now only the address generator is used for any application
+
     addressGeneratorModule = dynamic_cast<AddressGenerator*>(getParentModule()->getModuleByRelativePath("addressGenerator"));
     if (addressGeneratorModule == 0)
     	error("Wrong path to the address generator!?!?");

@@ -40,7 +40,7 @@ simple UDPBasicApp like IUDPApp
 {
     parameters:
         int localPort = default(-1);  // local port (-1: use ephemeral port)
-        int destPort;
+        volatile int destPort;
         volatile int messageLength @unit(B); // length of messages to generate, in bytes
         double startTime @unit(s) = default(this.sendInterval); // application start time (start of the first packet)
         double stopTime @unit(s) = default(0);  // time of finish sending, 0 means forever

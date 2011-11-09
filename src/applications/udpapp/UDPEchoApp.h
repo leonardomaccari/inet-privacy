@@ -42,8 +42,8 @@ class UDPEchoApp : public UDPBasicApp
 
     // global cumulative statistics for all the applications
   protected:
-    static std::set<int> repliedRequests;
-    static std::set<int> receivedReplies;
+    std::set<int> repliedRequests;
+    std::set<int> receivedReplies;
 
     static simsignal_t roundTripTimeSignal;
     static simsignal_t sentAnswerBytesSignal;

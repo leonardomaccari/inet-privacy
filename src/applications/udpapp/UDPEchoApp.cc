@@ -30,8 +30,6 @@ int UDPEchoApp::requestsSent;
 int UDPEchoApp::repliesReceived;
 int UDPEchoApp::repliesSent;
 int UDPEchoApp::globalUnsent;
-std::set<int> UDPEchoApp::repliedRequests;
-std::set<int> UDPEchoApp::receivedReplies;
 
 void UDPEchoApp::initialize(int stage)
 {

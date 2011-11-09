@@ -110,8 +110,12 @@ void ChatApp::initialize(int stage)
         throw cRuntimeError(this, "Invalid chooseDestAddrMode: '%s'", addrModeStr);
     chooseDestAddrMode = (ChooseDestAddrMode)addrMode;
     addressGeneratorModule = dynamic_cast<AddressGenerator*>(getParentModule()->getModuleByRelativePath("addressGenerator"));
-    if (addressGeneratorModule == 0)
-    	error("Wrong path to the address generator!?!?");
+    if (addressGeneratorModule == 0){
+    	std::stringstream tmp;
+    	tmp << getParentModule()->getFullPath() << " " ;
+    	tmp << "Wrong path to the address generator!?!?";
+    	error(tmp.str().c_str());
+    }
 
     WATCH(numSent);
     WATCH(numReceived);
