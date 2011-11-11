@@ -777,6 +777,10 @@ void RoutingTable::addRule(bool output, IPv4RouteRule *entry)
     IPv4RouteRule * newRule = new IPv4RouteRule;
     memcpy(newRule, entry, sizeof(IPv4RouteRule));
     newRule->activate();
+	// needed to enforce output rules in the initialization when not using firewall-aware OLSR
+    if(strncmp(par("firewallStrategy").stringValue(),"NONE",strlen("NONE")) == 0 ){
+		newRule->enforce();
+    }
     for (int i=0; i < HITQUEUE_SIZE; i++)
         	newRule->hitQueue.push_back(0);
 
@@ -814,12 +818,15 @@ void RoutingTable::delRule(IPv4RouteRule *entry)
 }
 void RoutingTable::delRule(bool output, IPv4Address destAddress)
 {
+	if (destAddress.isUnspecified())
+		return;
 	if(output)
 	{
 		for (unsigned int i=0; i<outputRules.size(); i++)
 			if (outputRules[i]->getDestAddress() == destAddress)
 			{
 				outputRules[i]->deactivate();
+
 				//delete entry;
 				//outputRules.erase(outputRules.begin()+i);
 				break;
@@ -1036,8 +1043,8 @@ void RoutingTable::finish(){
 	double totalPackets = outputMatched+outputMissed;
 	recordScalar("outputMissedRatio", outputMissed/totalPackets);
 //	recordScalar("outputMatchedRatio", outputMatched/totalPackets);
-	recordScalar("outputMatchedRatio", outputMatched);
+	recordScalar("outputMatchedGlobal", outputMatched);
 
 	//recordScalar("inputMatchedRatio", inputMatched/(double)toBeFiltered); // with this, I need to know the number of sent packets per run that should be filtered
-	recordScalar("inputMatchedRatio", inputMatched); // with this I will compare inputmatch without firewall with inputmatch with more nodes filtering
+	recordScalar("inputMatchedGlobal", inputMatched); // with this I will compare inputmatch without firewall with inputmatch with more nodes filtering
 }
