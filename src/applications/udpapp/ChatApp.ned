@@ -49,9 +49,9 @@ simple ChatApp like IUDPApp
         double delayLimit @unit("s") = default(0); // maximum accepted delay for a packet; packets with a bigger delay are discarded (dropped), zero value means no limit
         bool debugStats = default(false);
         
-        @statistic[sentPk](title="packets sent"; record=count,"vector(count)"; interpolationmode=none);
-        @statistic[rcvdPk](title="packets received"; record=count,"vector(count)"; interpolationmode=none);
-        @statistic[dropPk](title="packets dropped"; record=count,"vector(count)"; interpolationmode=none);
+        @statistic[sentPkBytes](title="packets sent"; record=count,"vector(count)"; interpolationmode=none);
+        @statistic[rcvdPkBytes](title="packets received"; record=count,"vector(count)"; interpolationmode=none);
+        @statistic[dropPkBytes](title="packets dropped"; record=count,"vector(count)"; interpolationmode=none);
         @statistic[outOfOrderPk](title="packets received out of order"; record=count,"vector(count)"; interpolationmode=none);
         @statistic[endToEndDelay](title="delay";record=histogram,stats,vector);
         // testing the statistic behavior

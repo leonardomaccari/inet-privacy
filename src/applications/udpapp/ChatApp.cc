@@ -143,10 +143,10 @@ void ChatApp::initialize(int stage)
         scheduleAt(startTime, timerNext);
     }
 
-    sentPkSignal = registerSignal("sentPk");
-    rcvdPkSignal = registerSignal("rcvdPk");
+    sentPkSignal = registerSignal("sentPkBytes");
+    rcvdPkSignal = registerSignal("rcvdPkBytes");
     outOfOrderPkSignal = registerSignal("outOfOrderPk");
-    dropPkSignal = registerSignal("dropPk");
+    dropPkSignal = registerSignal("dropPkBytes");
     endToEndDelaySignal = registerSignal("endToEndDelay");
 	startedSessions = registerSignal("startedSessions");
 	answeredSessions = registerSignal("answeredSessions");

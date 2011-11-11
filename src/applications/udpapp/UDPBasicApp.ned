@@ -47,8 +47,6 @@ simple UDPBasicApp like IUDPApp
         volatile double sendInterval @unit(s); // should usually be a random value, e.g. exponential(1)
         string destAddresses = default(""); // list of IP addresses, separated by spaces
         @display("i=block/app");
-        @signal[sentPk](type=cPacket);
-        @signal[rcvdPk](type=cPacket);
         @statistic[rcvdPkBytes](title="Received packet bytes"; source="packetBytes(rcvdPk)"; unit=B; record=count,sum,vector; interpolationmode=none);
         @statistic[sentPkBytes](title="Sent packet bytes"; source="packetBytes(sentPk)"; unit=B; record=count,sum,vector; interpolationmode=none);
     gates:
