@@ -1696,8 +1696,8 @@ OLSR::link_sensing(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t
         add_link_tuple(link_tuple, hello.willingness());
         created = true;
     }
-    else
-        updated = true;
+//    else
+//        updated = true;
 
     link_tuple->asym_time() = now + OLSR::emf_to_seconds(msg.vtime());
     assert(hello.count >= 0 && hello.count <= OLSR_MAX_HELLOS);
@@ -1749,7 +1749,7 @@ OLSR::link_sensing(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t
             new OLSR_LinkTupleTimer(this, link_tuple);
         link_timer->resched(DELAY(MIN(link_tuple->time(), link_tuple->sym_time())));
     }
-    return (updated | created);
+    return (updated || created);
 }
 
 ///

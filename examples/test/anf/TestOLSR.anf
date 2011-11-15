@@ -6,7 +6,7 @@
   </inputs>
   <datasets>
     <datasets name="RTsize">
-      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND file(/inet/examples/test/results/TestOLSRFast-0.vec)" type="VECTOR"/>
+      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND run(TestOLSRFast-0*)" type="VECTOR"/>
       <items xsi:type="scave:Group" name="optimized">
         <items xsi:type="scave:Apply" operation="aggregator">
           <params name="function" value="average"/>
@@ -14,7 +14,7 @@
         </items>
         <items xsi:type="scave:LineChart" name="Routing Table Size Avg optimized" lineNameFormat=""/>
       </items>
-      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND file(/inet/examples/test/results/TestOLSRFast-1.vec)" type="VECTOR"/>
+      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND run(TestOLSRFast-1*)" type="VECTOR"/>
       <items xsi:type="scave:Group" name="unoptimized">
         <items xsi:type="scave:Apply" operation="aggregator">
           <params name="function" value="average"/>
@@ -23,8 +23,8 @@
       </items>
     </datasets>
     <datasets name="Rt size One node">
-      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND file(/inet/examples/test/results/TestOLSRFast-0.vec) AND module(*.host[0].*) " type="VECTOR"/>
-      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND file(/inet/examples/test/results/TestOLSRFast-1.vec) AND module(*.host[0].*) " type="VECTOR"/>
+      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND run(TestOLSRFast-0*) AND module(*.host[0].*) " type="VECTOR"/>
+      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND run(testOLSRFast-1*) AND module(*.host[0].*) " type="VECTOR"/>
       <items xsi:type="scave:LineChart" name="one RT" lineNameFormat=""/>
     </datasets>
   </datasets>
