@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scave:Analysis xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:scave="http://www.omnetpp.org/omnetpp/scave">
+  <inputs>
+    <inputs name="/inet/examples/test/results/TestEcho*.vec"/>
+    <inputs name="/inet/examples/test/results/TestEcho*.sca"/>
+  </inputs>
+  <datasets>
+    <datasets name="EchoTestRatio">
+      <items xsi:type="scave:Add" filterPattern=" module(TestNet.host[0].udpApp[0]) AND name(&quot;Global packets arrived ratio&quot;)"/>
+      <items xsi:type="scave:Add" filterPattern=" module(TestNet.host[0].udpApp[0]) AND name(&quot;Global packets acked ratio&quot;)"/>
+      <items xsi:type="scave:BarChart" name="packets arrived and acked"/>
+    </datasets>
+    <datasets name="EchoTestNumbers">
+      <items xsi:type="scave:Add" filterPattern="module(*host[*].udpApp[0]) AND name(RequestsSent)"/>
+      <items xsi:type="scave:Add" filterPattern="module(*host[*].udpApp[0]) AND name(RepliesSent)"/>
+      <items xsi:type="scave:Add" filterPattern="module(*host[*].udpApp[0]) AND name(RequestsUnSent)"/>
+      <items xsi:type="scave:BarChart" name=""/>
+    </datasets>
+    <datasets name="mac">
+      <items xsi:type="scave:Add" filterPattern="module(*.mac) AND name(&quot;sent and*&quot;)"/>
+      <items xsi:type="scave:BarChart" name=""/>
+    </datasets>
+  </datasets>
+  <chartSheets>
+    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.2 //@datasets/@datasets.1/@items.3 //@datasets/@datasets.2/@items.1"/>
+  </chartSheets>
+</scave:Analysis>
