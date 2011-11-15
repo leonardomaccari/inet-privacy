@@ -409,6 +409,7 @@ class OLSR : public ManetRoutingBase
     int     use_mac_;
     bool useIndex;
 
+    bool useOptimization;
 
     /// Address of the routing agent.
     nsaddr_t ra_addr_;
@@ -466,8 +467,9 @@ class OLSR : public ManetRoutingBase
     virtual void        mpr_computation();
     virtual void        rtable_computation();
 
-    virtual void        process_hello(OLSR_msg&, const nsaddr_t &, const nsaddr_t &, const int &);
-    virtual void        process_tc(OLSR_msg&, const nsaddr_t &, const int &);
+    virtual bool        process_hello(OLSR_msg&, const nsaddr_t &, const nsaddr_t &, const int &);
+    virtual bool        process_tc(OLSR_msg&, const nsaddr_t &, const int &);
+    int            update_topology_tuples(OLSR_msg msg, int index);
     virtual void        process_mid(OLSR_msg&, const nsaddr_t &, const int &);
 
     virtual void        forward_default(OLSR_msg&, OLSR_dup_tuple*, const nsaddr_t &, const nsaddr_t &);
@@ -479,9 +481,9 @@ class OLSR : public ManetRoutingBase
     virtual void        send_mid();
     virtual void        send_pkt();
 
-    virtual void        link_sensing(OLSR_msg&, const nsaddr_t &, const nsaddr_t &, const int &);
-    virtual void        populate_nbset(OLSR_msg&);
-    virtual void        populate_nb2hopset(OLSR_msg&);
+    virtual bool        link_sensing(OLSR_msg&, const nsaddr_t &, const nsaddr_t &, const int &);
+    virtual bool        populate_nbset(OLSR_msg&);
+    virtual bool        populate_nb2hopset(OLSR_msg&);
     virtual void        populate_mprselset(OLSR_msg&);
 
     virtual void        set_hello_timer();

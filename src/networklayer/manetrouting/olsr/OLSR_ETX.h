@@ -209,7 +209,7 @@ class OLSR_ETX : public OLSR
 
 
     void        process_hello(OLSR_msg&, const nsaddr_t &, const nsaddr_t &, uint16_t, const int &);
-    void        process_tc(OLSR_msg&, const nsaddr_t &, const int &);
+    bool        process_tc(OLSR_msg&, const nsaddr_t &, const int &);
     // void     process_mid(OLSR_msg&, const nsaddr_t &);
 
     //void      forward_default(OLSR_msg&, OLSR_dup_tuple*, nsaddr_t,nsaddr_t);
@@ -223,7 +223,7 @@ class OLSR_ETX : public OLSR
 
     void        link_sensing(OLSR_msg&, const nsaddr_t &, const nsaddr_t &, uint16_t, const int &);
     //void      populate_nbset(OLSR_msg&);
-    void        populate_nb2hopset(OLSR_msg&);
+    bool        populate_nb2hopset(OLSR_msg&);
     //void      populate_mprselset(OLSR_msg&);
 
     //void      set_hello_timer();

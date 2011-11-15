@@ -443,7 +443,7 @@ OLSR::initialize(int stage)
         tc_ival_ = par("Tc_ival");
         mid_ival_ = par("Mid_ival");
         use_mac_ = par("use_mac");
-
+        useOptimization = par("useOptimization");
         if (par("reduceFuncionality"))
             EV << "reduceFuncionality true" << endl;
         else
@@ -610,6 +610,7 @@ OLSR::recv_olsr(cMessage* msg)
     OLSR_pkt* op;
     nsaddr_t src_addr;
     int index;
+    bool recalculateRoutes = false;
 
     // All routing messages are sent from and to port RT_PORT,
     // so we check it.
@@ -648,10 +649,12 @@ OLSR::recv_olsr(cMessage* msg)
         if (duplicated == NULL)
         {
             // Process the message according to its type
-            if (msg.msg_type() == OLSR_HELLO_MSG)
-                process_hello(msg, ra_addr(), src_addr, index);
-            else if (msg.msg_type() == OLSR_TC_MSG)
-                process_tc(msg, src_addr, index);
+            if (msg.msg_type() == OLSR_HELLO_MSG){
+                recalculateRoutes += process_hello(msg, ra_addr(), src_addr, index);
+            }
+            else if (msg.msg_type() == OLSR_TC_MSG){
+            	recalculateRoutes += process_tc(msg, src_addr, index);
+            }
             else if (msg.msg_type() == OLSR_MID_MSG)
                 process_mid(msg, src_addr, index);
             else
@@ -692,7 +695,14 @@ OLSR::recv_olsr(cMessage* msg)
     delete op;
 
     // After processing all OLSR messages, we must recompute routing table
-    rtable_computation();
+    if(!useOptimization){
+    	rtable_computation();
+    	return;
+    }
+    if (recalculateRoutes){
+    	rtable_computation();
+    }
+
 }
 
 ///
@@ -1154,16 +1164,19 @@ OLSR::rtable_computation()
 /// \param receiver_iface the address of the interface where the message was received from.
 /// \param sender_iface the address of the interface where the message was sent from.
 ///
-void
+bool
 OLSR::process_hello(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t &sender_iface, const int &index)
 {
     assert(msg.msg_type() == OLSR_HELLO_MSG);
 
-    link_sensing(msg, receiver_iface, sender_iface, index);
-    populate_nbset(msg);
-    populate_nb2hopset(msg);
-    mpr_computation();
-    populate_mprselset(msg);
+    bool ret2 = link_sensing(msg, receiver_iface, sender_iface, index);
+    populate_nbset(msg); // this does not populate, just updates willingness
+    bool ret1 = populate_nb2hopset(msg);
+    if (ret1 || ret2){
+    	mpr_computation();
+    }
+	populate_mprselset(msg);
+	return (ret1 || ret2);
 }
 
 ///
@@ -1175,7 +1188,7 @@ OLSR::process_hello(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_
 /// \param msg the %OLSR message which contains the TC message.
 /// \param sender_iface the address of the interface where the message was sent from.
 ///
-void
+bool
 OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
 {
     assert(msg.msg_type() == OLSR_TC_MSG);
@@ -1186,7 +1199,7 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
     // 1-hop neighborhood of this node, the message MUST be discarded.
     OLSR_link_tuple* link_tuple = state_.find_sym_link_tuple(sender_iface, now);
     if (link_tuple == NULL)
-        return;
+        return false;
 
     // 2. If there exist some tuple in the topology set where:
     //  T_last_addr == originator address AND
@@ -1196,7 +1209,7 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
     OLSR_topology_tuple* topology_tuple =
         state_.find_newer_topology_tuple(msg.orig_addr(), tc.ansn());
     if (topology_tuple != NULL)
-        return;
+        return false;
 
     // 3. All tuples in the topology set where:
     //  T_last_addr == originator address AND
@@ -1240,6 +1253,7 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
             topology_timer->resched(DELAY(topology_tuple->time()));
         }
     }
+    return true;
 }
 
 ///
@@ -1657,7 +1671,7 @@ OLSR::send_mid()
 /// \param receiver_iface the address of the interface where the message was received from.
 /// \param sender_iface the address of the interface where the message was sent from.
 ///
-void
+bool
 OLSR::link_sensing(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t &sender_iface, const int &index)
 {
     OLSR_hello& hello = msg.hello();
@@ -1732,22 +1746,26 @@ OLSR::link_sensing(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t
             new OLSR_LinkTupleTimer(this, link_tuple);
         link_timer->resched(DELAY(MIN(link_tuple->time(), link_tuple->sym_time())));
     }
+    return (updated | created);
 }
 
 ///
 /// \brief  Updates the Neighbor Set according to the information contained in a new received
-///     HELLO message (following RFC 3626).
+///     HELLO message (following RFC 3626). Actually this does not populate, just updates willingness
 ///
 /// \param msg the %OLSR message which contains the HELLO message.
 ///
-void
+bool
 OLSR::populate_nbset(OLSR_msg& msg)
 {
     OLSR_hello& hello = msg.hello();
 
     OLSR_nb_tuple* nb_tuple = state_.find_nb_tuple(msg.orig_addr());
-    if (nb_tuple != NULL)
-        nb_tuple->willingness() = hello.willingness();
+    if (nb_tuple != NULL){ // it was already present
+    	nb_tuple->willingness() = hello.willingness();
+    }
+    return true; // added a new neighbor
+
 }
 
 ///
@@ -1756,11 +1774,12 @@ OLSR::populate_nbset(OLSR_msg& msg)
 ///
 /// \param msg the %OLSR message which contains the HELLO message.
 ///
-void
+bool
 OLSR::populate_nb2hopset(OLSR_msg& msg)
 {
     double now = CURRENT_TIME;
     OLSR_hello& hello = msg.hello();
+    bool changedTopology = false;
 
     for (linkset_t::iterator it_lt = linkset().begin(); it_lt != linkset().end(); it_lt++)
     {
@@ -1807,6 +1826,7 @@ OLSR::populate_nb2hopset(OLSR_msg& msg)
                                     OLSR_Nb2hopTupleTimer* nb2hop_timer =
                                         new OLSR_Nb2hopTupleTimer(this, nb2hop_tuple);
                                     nb2hop_timer->resched(DELAY(nb2hop_tuple->time()));
+                                    changedTopology = true;
                                 }
                                 else
                                 {
@@ -1824,14 +1844,16 @@ OLSR::populate_nb2hopset(OLSR_msg& msg)
                             // N_neighbor_main_addr == Originator
                             // Address AND N_2hop_addr  == main address
                             // of the 2-hop neighbor are deleted.
-                            state_.erase_nb2hop_tuples(msg.orig_addr(),
-                                                       nb2hop_addr);
+                        	if(state_.erase_nb2hop_tuples(msg.orig_addr(),
+                                                       nb2hop_addr))
+                        		changedTopology = true;
                         }
                     }
                 }
             }
         }
     }
+    return changedTopology;
 }
 
 ///
@@ -1956,17 +1978,26 @@ OLSR::set_mid_timer()
 void
 OLSR::nb_loss(OLSR_link_tuple* tuple)
 {
+	bool topologychanged = false;
     debug("%f: Node %d detects neighbor %d loss\n",
           CURRENT_TIME,
           OLSR::node_id(ra_addr()),
           OLSR::node_id(tuple->nb_iface_addr()));
 
     updated_link_tuple(tuple);
-    state_.erase_nb2hop_tuples(get_main_addr(tuple->nb_iface_addr()));
-    state_.erase_mprsel_tuples(get_main_addr(tuple->nb_iface_addr()));
+    topologychanged += state_.erase_nb2hop_tuples(get_main_addr(tuple->nb_iface_addr()));
+    topologychanged += state_.erase_mprsel_tuples(get_main_addr(tuple->nb_iface_addr()));
 
-    mpr_computation();
-    rtable_computation();
+    if(useOptimization)
+    {
+    	mpr_computation();
+    	rtable_computation();
+    	return;
+    }
+    if(topologychanged){
+    	mpr_computation();
+    	rtable_computation();
+    }
 }
 
 ///
