@@ -1172,11 +1172,14 @@ OLSR::process_hello(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_
     bool ret2 = link_sensing(msg, receiver_iface, sender_iface, index);
     populate_nbset(msg); // this does not populate, just updates willingness
     bool ret1 = populate_nb2hopset(msg);
-    if (ret1 || ret2){
+
+    if (!useOptimization)
     	mpr_computation();
-    }
+    else if (ret1 || ret2)
+    	mpr_computation();
+
 	populate_mprselset(msg);
-	return (ret1 || ret2);
+    return (ret1 || ret2);
 }
 
 ///
