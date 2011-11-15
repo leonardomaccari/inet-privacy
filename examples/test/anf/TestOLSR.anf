@@ -24,7 +24,7 @@
     </datasets>
     <datasets name="Rt size One node">
       <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND run(TestOLSRFast-0*) AND module(*.host[0].*) " type="VECTOR"/>
-      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND run(testOLSRFast-1*) AND module(*.host[0].*) " type="VECTOR"/>
+      <items xsi:type="scave:Add" filterPattern="name(routingTableSize:vector) AND run(TestOLSRFast-1*) AND module(*.host[0].*) " type="VECTOR"/>
       <items xsi:type="scave:LineChart" name="one RT" lineNameFormat=""/>
     </datasets>
   </datasets>

@@ -1214,6 +1214,9 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
     if (topology_tuple != NULL)
         return false;
 
+    if (useOptimization)
+    	return update_topology_tuples(msg, index);
+
     // 3. All tuples in the topology set where:
     //  T_last_addr == originator address AND
     //  T_seq       <  ANSN
@@ -1257,6 +1260,100 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
         }
     }
     return true;
+}
+
+int
+OLSR::update_topology_tuples(OLSR_msg msg, int index)
+{
+
+	double now = CURRENT_TIME;
+	OLSR_tc& tc = msg.tc();
+	if (tc.count == 0)
+		return 0;
+	int changedTuples = 0; // needed to know if we have to recalculate the routes
+	std::set<int> tccounter;
+	/* Standard says:
+	 *  3    All tuples in the topology set where:
+
+               T_last_addr == originator address AND
+
+               T_seq       <  ANSN
+
+          MUST be removed from the topology set.
+
+     4    For each of the advertised neighbor main address received in
+          the TC message:
+
+          4.1  If there exist some tuple in the topology set where:
+
+                    T_dest_addr == advertised neighbor main address, AND
+
+                    T_last_addr == originator address,
+
+               then the holding time of that tuple MUST be set to:
+
+                    T_time      =  current time + validity time.
+
+          4.2  Otherwise, a new tuple MUST be recorded in the topology
+               set where:
+
+                    T_dest_addr = advertised neighbor main address,
+
+                    T_last_addr = originator address,
+
+                    T_seq       = ANSN,
+
+                    T_time      = current time + validity time.
+	 *
+	 * This shoud achieve the same but with less erase&add.
+	 *
+	 */
+	for (std::vector<OLSR_topology_tuple*>::iterator it = topologyset().begin(); it != topologyset().end();)
+	{
+		bool foundTuple = 0;
+		if ((*it)->last_addr_ == msg.orig_addr()){ // for any tuple in the list that is
+			// passing for this node
+			for (int i = 0; i < tc.count; i++)
+			{
+				assert(i >= 0 && i < OLSR_MAX_ADDRS);
+				nsaddr_t addr = tc.nb_main_addr(i);
+				if((*it)->dest_addr() == addr){ // found a tuple to be updated
+					(*it)->time() = now + OLSR::emf_to_seconds(msg.vtime());
+					(*it)->seq() = tc.ansn();
+					foundTuple = 1;
+					tccounter.insert(i);
+				}
+			}
+			if (!foundTuple){ // the tuple was not in present in the TC, erase it
+				changedTuples++;
+				it = topologyset().erase(it); // erase and increment iterator
+				continue;
+			}else{
+				it++;
+				continue;
+			}
+		}
+		it++; // did not enter the main if, increment iterator
+	}
+	for (int i = 0; i < tc.count; i++)
+	{
+		if(tccounter.find(i) == tccounter.end()){ // we did not update this, let's add it
+			nsaddr_t addr = tc.nb_main_addr(i);
+			OLSR_topology_tuple* topology_tuple = new OLSR_topology_tuple;
+			topology_tuple->dest_addr() = addr;
+			topology_tuple->last_addr() = msg.orig_addr();
+			topology_tuple->seq() = tc.ansn();
+			topology_tuple->time() = now + OLSR::emf_to_seconds(msg.vtime());
+			topology_tuple->local_iface_index() = index;
+			add_topology_tuple(topology_tuple);
+			// Schedules topology tuple deletion
+			OLSR_TopologyTupleTimer* topology_timer =
+					new OLSR_TopologyTupleTimer(this, topology_tuple);
+			topology_timer->resched(DELAY(topology_tuple->time()));
+			changedTuples++;
+		}
+	}
+	return changedTuples;
 }
 
 ///
