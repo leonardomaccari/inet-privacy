@@ -66,14 +66,22 @@ void StaticGridMobility::initializePosition()
     int col = (index) % horizSize;
     double row = floor((index) / (double)horizSize);
 
+    int roundedInt;
+    if (horizSize == 1)
+    	roundedInt = 1;
+    else
+    	roundedInt = horizSize - 1;
     lastPosition.x = constraintAreaMin.x + marginX
-        + col * ((constraintAreaMax.x - constraintAreaMin.x) - 2 * marginX) / (horizSize - 1);
+        + col * ((constraintAreaMax.x - constraintAreaMin.x) - 2 * marginX) / roundedInt;
 
     if (lastPosition.x >= constraintAreaMax.x)
         lastPosition.x -= 1;
-
+    if (vertSize == 1)
+    	roundedInt = 1;
+    else
+    	roundedInt = vertSize - 1;
     lastPosition.y = constraintAreaMin.y + marginY
-        + row * ((constraintAreaMax.y - constraintAreaMin.y) - 2 * marginY) / (vertSize - 1);
+        + row * ((constraintAreaMax.y - constraintAreaMin.y) - 2 * marginY) / roundedInt;
 
     if (lastPosition.y >= constraintAreaMax.y)
         lastPosition.y -= 1;
