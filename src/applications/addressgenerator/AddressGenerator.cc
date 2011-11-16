@@ -68,6 +68,11 @@ void AddressGenerator::initialize(int stage)
 		routingTable = static_cast<RoutingTable*>(module);
 
 		destAddresses = routingTable->gatherRoutes();
+		if (par("nodeType").stdstringValue().compare(std::string("")) != 0){
+			nodeType = par("nodeType").stdstringValue();
+			chooseNodesByType();
+			typePurge(destAddresses);
+		}
 	}
 	else if (generatorMode.compare(std::string("FixedList")) == 0 ){
 		if (par("addressList").stdstringValue().compare(std::string("")) == 0)
@@ -88,21 +93,35 @@ void AddressGenerator::initialize(int stage)
 	else if (generatorMode.compare(std::string("NodeType")) == 0 ){
 		if (par("nodeType").stdstringValue().compare(std::string("")) == 0)
 			opp_error("You need to specify a NodeType option (e.g. 'host')  if you use mode NodeType");
-		std::string nodeType = par("nodeType").stdstringValue();
-		int myId = (this)->getParentModule()->getIndex();
-		for (int i=0; i<(this)->getParentModule()->getVectorSize(); i++)
-		{
-			if (i != myId){
-				std::stringstream nodeId;
-				nodeId << (this)->getParentModule()->getParentModule()->getFullPath() << "." << nodeType << "[" << i << "]";
-				destAddresses[IPvXAddressResolver().resolve(nodeId.str().c_str()).get4()] = 0;
-			}
-		}
+		nodeType = par("nodeType").stdstringValue();
+		chooseNodesByType();
+		destAddresses = chosenTypeList;
+
 	} else
 		opp_error("Wrong nodeType chose, see ned file for right values");
 
 	if (listSize != -1)
 		randomPurge(listSize);
+}
+
+void AddressGenerator::chooseNodesByType(){
+	int myId = (this)->getParentModule()->getIndex();
+	std::string myType = std::string((this)->getName());
+	cModule * typeArray = (this)->getParentModule()->getParentModule()->getSubmodule(nodeType.c_str(),0);
+	if (typeArray != 0 && typeArray->isVector()){
+		for (int i=0; i<typeArray->getVectorSize(); i++)
+		{
+			if (!(i == myId && (myType.compare(nodeType) == 0))){ // if it's not this module
+				std::stringstream nodeId;
+				nodeId << (this)->getParentModule()->getParentModule()->getFullPath() << "." << nodeType << "[" << i << "]";
+				chosenTypeList[IPvXAddressResolver().resolve(nodeId.str().c_str()).get4()] = 0;
+			}
+		}
+	} else {
+		std::stringstream tmp;
+		tmp <<  "This module expects a node structure of the kind network.node[].addressgenerator. There is no array with path network." << nodeType <<"[]";
+		error(tmp.str().c_str());
+	}
 }
 
 void AddressGenerator::finish()
@@ -125,7 +144,20 @@ void AddressGenerator::randomPurge(int size){
 	}
 }
 
+// remove elements from the map in random order
+void AddressGenerator::typePurge(std::map<IPv4Address, int> &destMap){
+	if (nodeType.compare(std::string("")) == 0)
+		return;
 
+	std::map<IPv4Address, int>::iterator ii = destMap.begin();
+	for (;ii != destMap.end(); )
+		{
+			if(chosenTypeList.find(ii->first) != chosenTypeList.end())
+				ii++;
+			else
+				destMap.erase(ii++); // previous destination is not available anymore
+		}
+}
 // try to keep the list consistent with time, not randomic at every refresh
 void AddressGenerator::consistentPurge(int size){
 	int rnd, i;
@@ -243,6 +275,7 @@ void AddressGenerator::handleMessage(cMessage *msg)
         scheduleAt(simTime()+updateTime, msg);
     tmpList = routingTable->gatherRoutes();
     std::map<IPv4Address, int> oldList = destAddresses;
+	typePurge(tmpList);
     if (keepSetConsistent && tmpList.size() >= listSize)
     	consistentPurge(listSize);
     else if (keepSetBalanced && tmpList.size() >= listSize)

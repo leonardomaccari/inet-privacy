@@ -58,7 +58,7 @@ protected:
 	static simsignal_t listSizeSignal;
 	std::map<IPv4Address, int> destAddresses;
 	std::map<IPv4Address, int> tmpList;
-
+	std::map<IPv4Address, int> chosenTypeList;
 	cOutVector changedTargetsRatio;
 	cOutVector avgHopCount;
 
@@ -70,6 +70,8 @@ protected:
 	void randomPurge(int size);
 	void consistentPurge(int size);
 	void balancedPurge(int size);
+	void typePurge(std::map<IPv4Address, int>&destMap);
+	void chooseNodesByType();
 	void statsGenerator(std::map<IPv4Address, int>& oldList);
 	virtual void finish();
 
