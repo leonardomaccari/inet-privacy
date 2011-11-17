@@ -298,6 +298,7 @@ void UDP::processUDPPacket(UDPPacket *udpPacket)
         {
             EV << "No socket registered on port " << destPort << "\n";
             processUndeliverablePacket(udpPacket, ctrl);
+            delete payload;
             return;
         }
         else
@@ -315,6 +316,7 @@ void UDP::processUDPPacket(UDPPacket *udpPacket)
         {
             EV << "No socket registered on port " << destPort << "\n";
             processUndeliverablePacket(udpPacket, ctrl);
+            delete payload;
             return;
         }
         else
