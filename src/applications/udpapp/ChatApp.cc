@@ -298,6 +298,7 @@ void ChatApp::handleMessage(cMessage *msg)
     	if (dynamic_cast<UDPDataIndication *>(msg->getControlInfo()) == 0){
     		ev << "Error Received" << std::endl;
     		numUDPErrors ++;
+    		delete msg;
     		return;
     	}
 
