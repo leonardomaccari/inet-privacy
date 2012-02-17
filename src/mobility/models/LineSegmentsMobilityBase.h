@@ -22,6 +22,7 @@
 #include <omnetpp.h>
 
 #include "MovingMobilityBase.h"
+#include "ObstacleControl.h"
 
 
 /**
@@ -39,11 +40,15 @@ class INET_API LineSegmentsMobilityBase : public MovingMobilityBase
   protected:
     /** @brief End position of current linear movement. */
     Coord targetPosition;
-
+    ObstacleControl * obstacles;
+    Coord routeDeviation;
+    Coord targetPositionBak;
+    bool deviating;
+    bool obstacleAvoidance;
   protected:
     /** @brief Initializes mobility model parameters. */
     virtual void initialize(int stage);
-
+    virtual void initialize(int stage, bool obstacles);
     /** @brief Move the host according to the current simulation time. */
     virtual void move();
 
@@ -54,6 +59,9 @@ class INET_API LineSegmentsMobilityBase : public MovingMobilityBase
      * sequence, it should set nextChange to -1.
      */
     virtual void setTargetPosition() = 0;
+    void shufflePoint(Coord * c );
+    Coord getRandomPositionWithObstacles();
+    Coord getRandomPositionWithObstacles(Coord upLeft, Coord downRight);
 
   public:
     LineSegmentsMobilityBase();

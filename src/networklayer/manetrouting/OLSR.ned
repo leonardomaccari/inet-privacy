@@ -45,7 +45,9 @@ simple OLSR extends BaseRouting like IManetRouting
         int use_mac = default(0); // Determines if layer 2 notifications are enabled or not (chapter 13)
         bool UseIndex = default(false); // use the interface index instead the ip to identify the interface (EXPERIMENTAL)
         bool reduceFuncionality = default(false);
+        int ruleSet = default(0x00); 
         bool useOptimization = default(false);
+        double OLSR_NEIGHB_HOLD_TIME_MULTIPLIER = default(2);
         
     gates:
         input from_ip;

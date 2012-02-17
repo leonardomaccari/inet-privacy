@@ -24,18 +24,24 @@
 #include "InterfaceEntry.h"
 
 
-void IPv4RouteRule::setRoule(Rule rule)
+void IPv4RouteRule::setTarget(std::string target)
 {
-    if (DROP != rule && NONE != rule)
-        opp_error("Rule not supported yet");
 
-    this->rule = rule;
+    if (target.compare("DROP") == 0)
+        this->target = IPv4RouteRule::DROP;
+    else if (target.compare("ACCEPT") == 0)
+        this->target = IPv4RouteRule::ACCEPT;
+    else if (target.compare("LOG") == 0)
+        this->target = IPv4RouteRule::LOG;
+    else
+        opp_error("Only DROP/ACCEPT/LOG supported");
+
 }
 
 IPv4RouteRule::IPv4RouteRule()
 {
     interfacePtr = NULL;
-    rule = NONE;
+    target = NONE;
     sPort = dPort = -1;
     srcAddress = IPv4Address::UNSPECIFIED_ADDRESS;
     srcNetmask = IPv4Address::UNSPECIFIED_ADDRESS;
@@ -63,12 +69,13 @@ std::string IPv4RouteRule::info() const
     out << "destMask:"; if (destNetmask.isUnspecified()) out << "*  "; else out << destNetmask << "  ";
     out << "destPort:" << dPort << " ";
     out << "if:"; if (!interfacePtr) out << "*  "; else out << interfacePtr->getName() << "  ";
-    switch (rule)
+    switch (target)
     {
         case DROP:   out << " DROP"; break;
         case ACCEPT: out << " ACCEPT"; break;
         case NAT:    out << " NAT"; break;
         case NONE:   out << " NONE"; break;
+        case LOG:   out << " LOG"; break;
         default:     out << " ???"; break;
     }
     if(active)

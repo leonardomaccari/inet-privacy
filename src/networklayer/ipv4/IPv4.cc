@@ -150,17 +150,7 @@ void IPv4::handlePacketFromNetwork(IPv4Datagram *datagram)
             return;
         }
     }
-    // check input drop rules
-        const IPv4RouteRule *rule=checkInputRule(datagram);
-        if (rule && rule->getRule()==IPv4RouteRule::DROP)
-        {
-             EV << "\n Drop datagram with source "<< datagram->getSrcAddress() <<
-                   " and  destination "<< datagram->getDestAddress() << " by rule "<<rule->info() << "\n";
-             numDropped++;
-             delete datagram;
-             return;
-        }
-    // end check
+
 
     // remove control info
     if (datagram->getTransportProtocol()!=IP_PROT_DSR && datagram->getTransportProtocol()!=IP_PROT_MANET)
@@ -218,6 +208,7 @@ void IPv4::handleReceivedICMP(ICMPMessage *msg)
             // ICMP_TIMESTAMP_REQUEST, ICMP_TIMESTAMP_REPLY, etc.
             int gateindex = mapping.getOutputGateForProtocol(IP_PROT_ICMP);
             send(msg, "transportOut", gateindex);
+            break;
         }
     }
 }
@@ -294,14 +285,36 @@ void IPv4::routePacket(IPv4Datagram *datagram, InterfaceEntry *destIE, bool from
 #endif
 
     // check for local delivery
+
+    // "Input chain"
     if (rt->isLocalAddress(destAddr))
     {
-        EV << "local delivery\n";
-        if (datagram->getSrcAddress().isUnspecified())
-            datagram->setSrcAddress(destAddr); // allows two apps on the same host to communicate
-        numLocalDeliver++;
-        reassembleAndDeliver(datagram);
-        return;
+    	// check input drop rules
+    	const IPv4RouteRule *rule=checkInputRule(datagram);
+    	/* Globals are checked before input, since input is a static chain,
+    	 * I may have there some static rules for the specific node and I do not
+    	 * want global statistics to be polluted by static rules. Global is used to
+    	 * test dynamic ruleset.
+    	 */
+       	if (checkGlobalRule(datagram) != NULL){
+        		rt->incrementGlobalReceived();
+       	}
+    	if (rule && rule->getTarget()==IPv4RouteRule::DROP)
+    	{
+    		EV << "\n Drop datagram with source "<< datagram->getSrcAddress() <<
+    				" and  destination "<< datagram->getDestAddress() << " by rule "<<rule->info() << "\n";
+    		numDropped++;
+    		delete datagram;
+    		return;
+    	}
+
+    	// end check
+    	EV << "local delivery\n";
+    	if (datagram->getSrcAddress().isUnspecified())
+    		datagram->setSrcAddress(destAddr); // allows two apps on the same host to communicate
+    	numLocalDeliver++;
+    	reassembleAndDeliver(datagram);
+    	return;
     }
     // JcM Fix: broadcast limited address 255.255.255.255 or network broadcast, i.e. 192.168.0.255/24
     if (destAddr == IPv4Address::ALLONES_ADDRESS || rt->isLocalBroadcastAddress(destAddr))
@@ -356,20 +369,38 @@ void IPv4::routePacket(IPv4Datagram *datagram, InterfaceEntry *destIE, bool from
         return;
     }
     // Check drop rules
-    // Adapted for paper purpuses. The whole filtering method should be revised, since it does not respect
-    // netfilter's way. With this control Output==Netfilter forward, without this control
-    // Output == Netfilter:output+forward
-    // if(!fromHL)
-    const IPv4RouteRule *rule = checkOutputRule(datagram,destIE);
-    if (rule && rule->getRule()==IPv4RouteRule::DROP)
+	const IPv4RouteRule *rule = 0;
+    if(!fromHL) // "Forward chain"
+    	rule = checkForwardRule(datagram,destIE);
+    else { // "Output chain"
+    	rule = checkOutputRule(datagram,destIE);
+       	if (checkGlobalRule(datagram) != NULL)
+        		rt->incrementGlobalSent();
+        	/*  if the packet comes from the output chain count it.
+        		this increment could be done in the findRule function but
+        		I struggled to keep that function simple enough so I'd rather do it here
+        	 */
+    }
+
+    if (rule && rule->getTarget()==IPv4RouteRule::DROP)
     {
     	EV << "\n Drop datagram with source "<< datagram->getSrcAddress() <<
     			" and  destination "<< datagram->getDestAddress() << " by rule "<<rule->info() << "\n";
     	numDropped++;
     	delete datagram;
     	return;
-    }
+    }else { // these must be two separate controls, rules may be conflicting
+    	// and order is significant
+    	rule = checkPostRoutingRule(datagram,destIE);
+    	if (rule && rule->getTarget()==IPv4RouteRule::DROP){
+    		EV << "\n Drop datagram with source "<< datagram->getSrcAddress() <<
+    				" and  destination "<< datagram->getDestAddress() << " by rule "<<rule->info() << "\n";
+    		numDropped++;
+    		delete datagram;
+    		return;
+    	}
 
+    }
     IPv4Address nextHopAddr;
     // if output port was explicitly requested, use that, otherwise use IPv4 routing
     if (destIE)
@@ -498,7 +529,7 @@ void IPv4::routeMulticastPacket(IPv4Datagram *datagram, InterfaceEntry *destIE, 
     }
     // check output drop rules
     const IPv4RouteRule *rule = checkOutputRuleMulticast(datagram);
-    if (rule && rule->getRule()==IPv4RouteRule::DROP)
+    if (rule && rule->getTarget()==IPv4RouteRule::DROP)
     {
         EV << "\n Drop datagram with source "<< datagram->getSrcAddress() <<
               " and  destination "<< datagram->getDestAddress() << " by rule "<<rule->info() << "\n";
@@ -800,6 +831,7 @@ void IPv4::sendDatagramToOutput(IPv4Datagram *datagram, InterfaceEntry *ie, IPv4
     routingDecision->setNextHopAddr(nextHopAddr);
     datagram->setControlInfo(routingDecision);
 
+
     send(datagram, queueOutGate);
 
 }
@@ -1006,9 +1038,80 @@ void IPv4::reassembleAndDeliver(IPv4Datagram *datagram)
     }
 }
 #endif
+
+// @FIXME all the following functions could be merged in just one....
+
+const IPv4RouteRule * IPv4::checkGlobalRule(const IPv4Datagram* datagram)
+{
+    if (rt->getNumRules(GLOBAL)>0)
+    {
+    	int protocol = datagram->getTransportProtocol();
+    	int sport=-1;
+    	int dport=-1;
+    	if (protocol==IP_PROT_UDP)
+    	{
+#ifdef WITH_UDP
+    		sport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getSourcePort();
+    		dport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getDestinationPort();
+#endif
+    	}
+    	else if (protocol==IP_PROT_TCP)
+    	{
+#ifdef WITH_TCP_COMMON
+    		sport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getSrcPort();
+    		dport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getDestPort();
+#endif
+    	}
+
+    	const IPv4RouteRule *rule = rt->findRule(GLOBAL, protocol, sport,
+    			datagram->getSrcAddress(), dport, datagram->getDestAddress(),
+    			NULL, datagram->getTimeToLive(), true);
+    	return rule;
+    }
+    return NULL;
+}
+const IPv4RouteRule * IPv4::checkGlobalRule(const IPv4Datagram* datagram, const InterfaceEntry *destIE)
+{
+    if (rt->getNumRules(GLOBAL)>0)
+    {
+    	int protocol = datagram->getTransportProtocol();
+    	int sport=-1;
+    	int dport=-1;
+    	if (protocol==IP_PROT_UDP)
+    	{
+#ifdef WITH_UDP
+    		sport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getSourcePort();
+    		dport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getDestinationPort();
+#endif
+    	}
+    	else if (protocol==IP_PROT_TCP)
+    	{
+#ifdef WITH_TCP_COMMON
+    		sport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getSrcPort();
+    		dport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getDestPort();
+#endif
+    	}
+    	InterfaceEntry *iface =NULL;
+    	if (destIE)
+            iface=const_cast<InterfaceEntry*>(destIE);
+    	else
+    	{
+            const IPv4Route *re = rt->findBestMatchingRoute(datagram->getDestAddress());
+            if (re)
+              iface=re->getInterface();
+    	}
+
+    	const IPv4RouteRule *rule = rt->findRule(GLOBAL, protocol, sport,
+    			datagram->getSrcAddress(), dport, datagram->getDestAddress(),
+    			iface, datagram->getTimeToLive(), true);
+    	return rule;
+    }
+    return NULL;
+}
+
 const IPv4RouteRule * IPv4::checkInputRule(const IPv4Datagram* datagram)
 {
-    if (rt->getNumRules(false)>0)
+    if (rt->getNumRules(INPUT)>0)
     {
     	int protocol = datagram->getTransportProtocol();
     	int sport=-1;
@@ -1029,7 +1132,7 @@ const IPv4RouteRule * IPv4::checkInputRule(const IPv4Datagram* datagram)
     	}
     	IPv4Datagram *pkt = const_cast<IPv4Datagram*>(datagram);
     	InterfaceEntry *iface=getSourceInterfaceFrom(pkt);
-    	const IPv4RouteRule *rule = rt->findRule(false, protocol, sport,
+    	const IPv4RouteRule *rule = rt->findRule(INPUT, protocol, sport,
     			datagram->getSrcAddress(), dport,
     			datagram->getDestAddress(), iface,
                 datagram->getTimeToLive(), true);
@@ -1038,9 +1141,9 @@ const IPv4RouteRule * IPv4::checkInputRule(const IPv4Datagram* datagram)
     return NULL;
 }
 
-const IPv4RouteRule * IPv4::checkOutputRule(const IPv4Datagram* datagram,const InterfaceEntry *destIE)
+const IPv4RouteRule * IPv4::checkForwardRule(const IPv4Datagram* datagram,const InterfaceEntry *destIE)
 {
-    if (rt->getNumRules(true)>0)
+    if (rt->getNumRules(FORWARD)>0)
     {
     	int protocol = datagram->getTransportProtocol();
     	int sport=-1;
@@ -1069,7 +1172,7 @@ const IPv4RouteRule * IPv4::checkOutputRule(const IPv4Datagram* datagram,const I
               iface=re->getInterface();
     	}
     	rt->refreshRuleset();
-    	const IPv4RouteRule *rule = rt->findRule(true, protocol, sport,
+    	const IPv4RouteRule *rule = rt->findRule(FORWARD, protocol, sport,
     			datagram->getSrcAddress(), dport, datagram->getDestAddress(),
     			iface, datagram->getTimeToLive(), true);
     	return rule;
@@ -1077,9 +1180,9 @@ const IPv4RouteRule * IPv4::checkOutputRule(const IPv4Datagram* datagram,const I
     return NULL;
 }
 
-const IPv4RouteRule * IPv4::checkOutputRuleMulticast(const IPv4Datagram* datagram)
+const IPv4RouteRule * IPv4::checkOutputRule(const IPv4Datagram* datagram,const InterfaceEntry *destIE)
 {
-    if (rt->getNumRules(true)>0)
+    if (rt->getNumRules(OUTPUT)>0)
     {
     	int protocol = datagram->getTransportProtocol();
     	int sport=-1;
@@ -1099,7 +1202,93 @@ const IPv4RouteRule * IPv4::checkOutputRuleMulticast(const IPv4Datagram* datagra
 #endif
     	}
     	InterfaceEntry *iface =NULL;
-    	const IPv4RouteRule *rule = rt->findRule(true, protocol, sport,
+    	if (destIE)
+            iface=const_cast<InterfaceEntry*>(destIE);
+    	else
+    	{
+            const IPv4Route *re = rt->findBestMatchingRoute(datagram->getDestAddress());
+            if (re)
+              iface=re->getInterface();
+    	}
+    	rt->refreshRuleset();
+    	const IPv4RouteRule *rule = rt->findRule(OUTPUT, protocol, sport,
+    			datagram->getSrcAddress(), dport, datagram->getDestAddress(),
+    			iface, datagram->getTimeToLive(), true);
+    	return rule;
+    }
+    return NULL;
+}
+const IPv4RouteRule * IPv4::checkPostRoutingRule(IPv4Datagram* datagram,const InterfaceEntry *destIE)
+{
+    if (rt->getNumRules(POSTROUTING)>0)
+    {
+    	int protocol = datagram->getTransportProtocol();
+    	int sport=-1;
+    	int dport=-1;
+    	if (protocol==IP_PROT_UDP)
+    	{
+#ifdef WITH_UDP
+    		sport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getSourcePort();
+    		dport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getDestinationPort();
+#endif
+    	}
+    	else if (protocol==IP_PROT_TCP)
+    	{
+#ifdef WITH_TCP_COMMON
+    		sport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getSrcPort();
+    		dport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getDestPort();
+#endif
+    	}
+    	InterfaceEntry *iface =NULL;
+    	if (destIE)
+            iface=const_cast<InterfaceEntry*>(destIE);
+    	else
+    	{
+            const IPv4Route *re = rt->findBestMatchingRoute(datagram->getDestAddress());
+            if (re)
+              iface=re->getInterface();
+    	}
+    	rt->refreshRuleset();
+    	double pos;
+    	double & posr = pos;
+    	const IPv4RouteRule *rule = rt->findRule(POSTROUTING, protocol, sport,
+    			datagram->getSrcAddress(), dport, datagram->getDestAddress(),
+    			iface, datagram->getTimeToLive(), true, posr);
+
+    	if (datagram->getTransportProtocol() != IP_PROT_MANET){
+    		cMsgPar * firewallDelay = new cMsgPar("FirewallDelay");
+    		firewallDelay->setDoubleValue(posr); //unit in seconds
+    		datagram->addPar(firewallDelay);
+    	}
+
+    	return rule;
+    }
+    return NULL;
+}
+
+const IPv4RouteRule * IPv4::checkOutputRuleMulticast(const IPv4Datagram* datagram)
+{
+    if (rt->getNumRules(OUTPUT)>0)
+    {
+    	int protocol = datagram->getTransportProtocol();
+    	int sport=-1;
+    	int dport=-1;
+    	if (protocol==IP_PROT_UDP)
+    	{
+#ifdef WITH_UDP
+    		sport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getSourcePort();
+    		dport = dynamic_cast<UDPPacket*> (datagram->getEncapsulatedPacket())->getDestinationPort();
+#endif
+    	}
+    	else if (protocol==IP_PROT_TCP)
+    	{
+#ifdef WITH_TCP_COMMON
+    		sport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getSrcPort();
+    		dport = dynamic_cast<TCPSegment*> (datagram->getEncapsulatedPacket())->getDestPort();
+#endif
+    	}
+    	InterfaceEntry *iface =NULL;
+    	const IPv4RouteRule *rule = rt->findRule(OUTPUT, protocol, sport,
     			datagram->getSrcAddress(), dport,
     			datagram->getDestAddress(), iface,
                 datagram->getTimeToLive(), true);

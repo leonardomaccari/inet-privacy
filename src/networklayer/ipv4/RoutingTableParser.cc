@@ -448,11 +448,17 @@ void RoutingTableParser::parseRules(char *rulesFile, int storeRules)
                    pos += strcpyword(str, rulesFile + pos);
                    skipBlanks(rulesFile, pos);
                    if (!strcmp(str, "INPUT"))
-                       position = 1;
+                       position = INPUT;
                    else if (!strcmp(str, "OUTPUT"))
-                       position = 0;
+                       position = OUTPUT;
+                   else if (!strcmp(str, "FORWARD"))
+                       position = FORWARD;
+                   else if (!strcmp(str, "POSTROUTING"))
+                	   position = POSTROUTING;
+                   else if (!strcmp(str, "GLOBAL"))
+                	   position = GLOBAL;
                    else
-                       opp_error("Syntax error in routing file: `%s' should be INPUT or OUTPUT", str);
+                       opp_error("Syntax error in routing file: `%s' should be INPUT, OUTPUT, POSTROUTING or FORWARD (or GLOBAL, for statistics)", str);
                    continue;
               }
               if (!strcmp(str, "-s"))
@@ -533,10 +539,7 @@ void RoutingTableParser::parseRules(char *rulesFile, int storeRules)
               {
                    pos += strcpyword(str, rulesFile + pos);
                    skipBlanks(rulesFile, pos);
-                   if (strcmp(str, "DROP"))
-                       opp_error("Only DROP supported");
-                   else
-                       e->setRoule(IPv4RouteRule::DROP);
+                   e->setTarget(std::string(str));
                    continue;
               }
               if (!strcmp(str, "-sport"))
@@ -566,36 +569,31 @@ void RoutingTableParser::parseRules(char *rulesFile, int storeRules)
                        e->setInterface(ie);
                   continue;
               }
-              if (!strcmp(str, "iptables")) // never happens?
+              if (!strcmp(str, "iptables")) // skipped to new line?
               {
+
             	  if(storeRules >= 0){
             		  rt->storeRule(e, storeRules);
             	  } else{
-            		  if (position==0)
-            			  rt->addRule(true, e);
-            		  else if (position==1)
-            			  rt->addRule(false, e);
-            		  else
-            			  opp_error("table rule not valid, must indicate input or output");
-            		  if (e->getRule()!=IPv4RouteRule::DROP)
-            			  opp_error("table rule not valid, must indicate input or output");
+            		  if (e->getTarget()!=IPv4RouteRule::DROP && e->getTarget()!=IPv4RouteRule::ACCEPT
+            				  && e->getTarget()!=IPv4RouteRule::LOG)
+            			  opp_error("table rule not valid, must indicate DROP/ACCEPT/LOG");
+        			  rt->addRule(CHAIN(position), e);
             	  }
             	  position = -1;
             	  e = new IPv4RouteRule();
             	  continue;
               }
+
          }
         if (storeRules >= 0){
         	rt->storeRule(e, storeRules);
         } else {
-        	if (position==0)
-        		rt->addRule(true, e);
-        	else if (position==1)
-        		rt->addRule(false, e);
-        	else
-        		opp_error("table rule not valid, must indicate input or output");
-        	if (e->getRule()!=IPv4RouteRule::DROP)
-        		opp_error("table rule not valid, must indicate input or output");
+        	if (e->getTarget()!=IPv4RouteRule::DROP && e->getTarget()!=IPv4RouteRule::ACCEPT
+  				  && e->getTarget()!=IPv4RouteRule::LOG)
+        		opp_error("table rule not valid, must indicate DROP/ACCEPT/LOG");
+        	rt->addRule(CHAIN(position), e);
+
         }
     }
 }

@@ -52,41 +52,6 @@ const Coord Obstacle::getBboxP2() const {
 }
 
 
-namespace {
-
-    bool isPointInObstacle(Coord point, const Obstacle& o) {
-        bool isInside = false;
-        const Obstacle::Coords& shape = o.getShape();
-        Obstacle::Coords::const_iterator i = shape.begin();
-        Obstacle::Coords::const_iterator j = (shape.rbegin()+1).base();
-        for (; i != shape.end(); j = i++) {
-            bool inYRangeUp = (point.y >= i->y) && (point.y < j->y);
-            bool inYRangeDown = (point.y >= j->y) && (point.y < i->y);
-            bool inYRange = inYRangeUp || inYRangeDown;
-            if (!inYRange) continue;
-            bool intersects = point.x < (i->x + ((point.y - i->y) * (j->x - i->x) / (j->y - i->y)));
-            if (!intersects) continue;
-            isInside = !isInside;
-        }
-        return isInside;
-    }
-
-    double segmentsIntersectAt(Coord p1From, Coord p1To, Coord p2From, Coord p2To) {
-        Coord p1Vec = p1To - p1From;
-        Coord p2Vec = p2To - p2From;
-        Coord p1p2 = p1From - p2From;
-
-        double D = (p1Vec.x * p2Vec.y - p1Vec.y * p2Vec.x);
-
-        double p1Frac = (p2Vec.x * p1p2.y - p2Vec.y * p1p2.x) / D;
-        if (p1Frac < 0 || p1Frac > 1) return -1;
-
-        double p2Frac = (p1Vec.x * p1p2.y - p1Vec.y * p1p2.x) / D;
-        if (p2Frac < 0 || p2Frac > 1) return -1;
-
-        return p1Frac;
-    }
-}
 
 double Obstacle::calculateReceivedPower(double pSend, double carrierFrequency, const Coord& senderPos, double senderAngle, const Coord& receiverPos, double receiverAngle) const {
 
@@ -99,15 +64,19 @@ double Obstacle::calculateReceivedPower(double pSend, double carrierFrequency, c
     const Obstacle::Coords& shape = getShape();
     Obstacle::Coords::const_iterator i = shape.begin();
     Obstacle::Coords::const_iterator j = (shape.rbegin()+1).base();
+    DEBUG_OUT<< senderPos << " - " << receiverPos << std::endl;
     for (; i != shape.end(); j = i++) {
         Coord c1 = *i;
         Coord c2 = *j;
+        DEBUG_OUT<< c2 << c1;
 
         double i = segmentsIntersectAt(senderPos, receiverPos, c1, c2);
         if (i != -1) {
+            DEBUG_OUT<< "OK" << std::endl;
             doesIntersect = true;
             intersectAt.insert(i);
         }
+        DEBUG_OUT<< std::endl;
 
     }
 
@@ -119,7 +88,10 @@ double Obstacle::calculateReceivedPower(double pSend, double carrierFrequency, c
     // make sure every other pair of points marks transition through matter and void, respectively.
     if (senderInside) intersectAt.insert(0);
     if (receiverInside) intersectAt.insert(1);
-    ASSERT((intersectAt.size() % 2) == 0);
+        // there are many border conditions that generate odd interceptions, we discard them
+	//     // ASSERT((intersectAt.size() % 2) == 0);
+	         if (intersectAt.size() %2 != 0)
+	             	return -1;
 
     // sum up distances in matter.
     double fractionInObstacle = 0;
@@ -134,4 +106,46 @@ double Obstacle::calculateReceivedPower(double pSend, double carrierFrequency, c
     double totalDistance = senderPos.distance(receiverPos);
     double attenuation = (attenuationPerWall * numWalls) + (attenuationPerMeter * fractionInObstacle * totalDistance);
     return pSend * pow(10.0, -attenuation/10.0);
+}
+
+
+Coord Obstacle::getTurningPoint(Coord * from, Coord * to, Coord * across) const{
+	// 1) use segmentsIntersectAt to get the intersection between my movement vector and
+	// the sides of the shape.
+	//
+	// 2) of that side, return the edge that is closer to the target
+
+	//1) copied from calculateReceivedPower
+	bool doesIntersect = false;
+	const Obstacle::Coords& shape = getShape();
+	Obstacle::Coords::const_iterator i = shape.begin();
+	Obstacle::Coords::const_iterator j = (shape.rbegin()+1).base();
+	Coord p1,p2;
+	int count = 0;
+	for (; i != shape.end(); j = i++) {
+		Coord c1 = *i;
+		Coord c2 = *j;
+		double i = segmentsIntersectAt(from, across, c1, c2, false);
+		if (i != -1) {
+			doesIntersect = true;
+			count++;
+			p1 = c1;
+			p2 = c2;
+   		DEBUG_OUT<< "going to " << *to << ", intersecting from " << *from << " to "
+   				<< *across << " with line " << c1
+   				<< c2 << " % of side length " << i << std::endl;
+		}
+	}
+	// we actually may "fly" over a very sharp angle crossing two lines,
+	// so do not check this
+	//	ASSERT(count == 1);
+
+	// 2)
+	Coord target;
+	if (p1.sqrdist(to) < p2.sqrdist(to))
+		target =  p1;
+	else
+		target =  p2;
+
+	return target;
 }

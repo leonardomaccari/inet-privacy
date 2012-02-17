@@ -1,0 +1,22 @@
+<root>
+<node type="test">
+<rset size="0">
+ <delay>
+  1
+ </delay>
+</rset>
+<rset size="1">
+ <delay>
+  1.5
+ </delay>
+</rset>
+
+</node>
+<node type="default">
+<rset size="50000">
+ <delay>
+  0
+ </delay>
+</rset>
+</node>
+</root>

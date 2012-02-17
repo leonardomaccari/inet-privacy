@@ -121,6 +121,7 @@ void UDP::initialize()
     passedUpPkSignal = registerSignal("passedUpPk");
     droppedPkWrongPortSignal = registerSignal("droppedPkWrongPort");
     droppedPkBadChecksumSignal = registerSignal("droppedPkBadChecksum");
+    rcvdPkHCountSignal = registerSignal("rcvdPkHCount");
 }
 
 void UDP::handleMessage(cMessage *msg)

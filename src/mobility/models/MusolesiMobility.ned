@@ -14,6 +14,8 @@ simple MusolesiMobility extends MobilityBase
 {
     parameters:
 
+      bool obstacleAvoidance = default(false);
+
       double minHostSpeed = default(0.1);
       double maxHostSpeed = default(10);
       double connectionThreshold = default(0.1); 

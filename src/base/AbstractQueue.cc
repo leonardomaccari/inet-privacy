@@ -45,9 +45,9 @@ void AbstractQueue::handleMessage(cMessage *msg)
     {
         doEndService();
     }
-    else if (!msgServiced)
+    else if (!msgServiced) // queue is empty
     {
-        cPacket *msg2 = arrivalWhenIdle( PK(msg) );
+        cPacket *msg2 = arrivalWhenIdle(PK(msg));
         if (msg2)
         {
             msgServiced = msg2;
@@ -55,7 +55,7 @@ void AbstractQueue::handleMessage(cMessage *msg)
         }
 
     }
-    else
+    else // queue is not empty
     {
         arrival( PK(msg) );
     }

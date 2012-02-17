@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scave:Analysis xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:scave="http://www.omnetpp.org/omnetpp/scave">
+  <inputs>
+    <inputs name="/inet/examples/test/results/TestAccept-*.vec"/>
+    <inputs name="/inet/examples/test/results/TestAccept-*.sca"/>
+  </inputs>
+  <datasets>
+    <datasets name="received">
+      <items xsi:type="scave:Add" filterPattern="module(*.udpApp[1..11]) AND name(&quot;packets *&quot;)"/>
+      <items xsi:type="scave:BarChart" name="Received"/>
+    </datasets>
+  </datasets>
+  <chartSheets>
+    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.1"/>
+  </chartSheets>
+</scave:Analysis>

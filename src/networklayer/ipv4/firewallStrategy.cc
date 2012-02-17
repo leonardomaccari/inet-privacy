@@ -1,4 +1,29 @@
 
+/*
+  Copyright Leonardo Maccari, 2011. This software has been developed
+  for the PAF-FPE Project financed by EU and Provincia di Trento.
+  See www.pervacy.eu or contact me at leonardo.maccari@unitn.it
+
+  I'd be greatful if:
+  - you keep the above copyright notice
+  - you cite pervacy.eu if you reuse this code
+
+
+  firewallStrategy is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  firewallStrategy is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with firewallStrategy.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
 #include "firewallStrategy.h"
 #include "OLSR.h"
 
@@ -26,6 +51,55 @@ void firewallStrategy::setMaxSize(int size){
 void firewallStrategy::setMPRThreshold(int th){
 	MPRThreshold =  th;
 }
+
+// maps must have a (0,x) value and must have at least 2 values
+// @FIXME this code is horrible... I should find a better way to initialize this
+
+void firewallStrategy::fillPerfMap(cXMLElement * xml, std::string perf){
+	posTimeMap myPerf;
+	cXMLElement * myXML;
+	if (!xml && !perf.compare(""))
+		opp_error("You hav chosen a non null performance value but no performance array file");
+
+	if (!xml)
+		return;
+
+	std::stringstream tmp;
+	tmp << "./root/node[@type='" << perf <<"\']";
+	myXML = xml->getFirstChildWithAttribute("node","type", perf.c_str());
+	if(myXML == 0)
+		opp_error("You have chosen a performance array but no default node type");
+
+	for (cXMLElement *child=myXML->getFirstChildWithAttribute("rset", "size");
+			child; child = child->getNextSiblingWithTag("rset"))
+	{
+		perfMap[atoi(child->getAttribute("size"))] = atof(child->getFirstChild()->getNodeValue());
+	}
+}
+
+firewallStrategy::nodePerformance firewallStrategy::stringToPerf(std::string perf_s){
+if (perf_s.compare("linksys") == 0)
+	return linksys;
+else if (perf_s.compare("moko") == 0)
+	return moko;
+else if (perf_s.compare("n900") == 0)
+	return n900;
+else if (perf_s.compare("atom") == 0)
+	return atom;
+else
+	return NOPERF;
+}
+
+double firewallStrategy::getDelay(nodePerformance perf, int pos){
+	posTimeMap::iterator ii = perfMap.upper_bound(pos);
+	if (ii == perfMap.begin()){
+		return ii->second;
+	}
+	else if (ii == perfMap.end()){
+		return (--ii)->second;
+	}
+}
+
 
 int hitBasedStrategy::reorganizeRules(){
 

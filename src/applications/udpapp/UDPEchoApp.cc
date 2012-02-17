@@ -127,13 +127,18 @@ void UDPEchoApp::processPacket(cPacket *msg)
 void UDPEchoApp::finish()
 {
 	UDPBasicApp::finish();
-    recordScalar("RequestsSent", requestsSent);
-    recordScalar("RepliesSent", repliesSent);
+    recordScalar("Global requests sent", requestsSent);
+    recordScalar("Global replies sent", repliesSent);
+    recordScalar("Global replies received", repliesReceived);
     recordScalar("Copies received", copyReceived);
-    recordScalar("RepliesReceived", repliesReceived);
-    recordScalar("Global packets arrived ratio", (double)repliesSent/(double)requestsSent);
-    recordScalar("Global packets acked ratio", (double)repliesReceived/(double)requestsSent);
-    globalUnsent += numUnsent;
-    recordScalar("RequestsUnSent", globalUnsent);
+    // number of requests arrived at destination
+    if (requestsSent != 0){
+    	recordScalar("Global packets arrived ratio", (double)repliesSent/(double)requestsSent);
+    	// number of responses arrived at destination
+    	recordScalar("Global packets acked ratio", ((double)repliesSent/(double)requestsSent)*((double)repliesReceived/(double)requestsSent));
+    	globalUnsent += numUnsent;
+    	// number of requests that could not be sent for lack of routes
+    	recordScalar("Global packets unsent ratio", globalUnsent/requestsSent);
+    }
 }
 

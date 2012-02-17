@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scave:Analysis xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:scave="http://www.omnetpp.org/omnetpp/scave">
+  <inputs>
+    <inputs name="/inet/examples/test/results/TestDropLittle*.vec"/>
+    <inputs name="/inet/examples/test/results/TestDropLittle*.sca"/>
+  </inputs>
+  <datasets>
+    <datasets name="packets">
+      <items xsi:type="scave:Add" filterPattern="name(&quot;packets *&quot;)"/>
+      <items xsi:type="scave:BarChart" name="recv/sent"/>
+    </datasets>
+    <datasets name="globalMissed">
+      <items xsi:type="scave:Add" filterPattern="name(globalMissed)"/>
+      <items xsi:type="scave:BarChart" name="missed ratio"/>
+    </datasets>
+    <datasets name="received">
+      <items xsi:type="scave:Add" filterPattern="module(*.udpApp[*]) AND name(packets*received)"/>
+      <items xsi:type="scave:BarChart" name="received"/>
+    </datasets>
+    <datasets name="rtt">
+      <items xsi:type="scave:Add" filterPattern="module(*.udpApp[11]) AND name(round*stats:mean)"/>
+      <items xsi:type="scave:BarChart" name="rtt"/>
+    </datasets>
+    <datasets name="routingtable">
+      <items xsi:type="scave:Add" filterPattern="module(*.routingTable)" type="VECTOR"/>
+      <items xsi:type="scave:LineChart" name="routing table" lineNameFormat=""/>
+    </datasets>
+    <datasets name="hopcount">
+      <items xsi:type="scave:Add" filterPattern="module(TestNet.host[*].routingTable) AND name(hopCount:histogram:mean)"/>
+      <items xsi:type="scave:BarChart" name="hopcount"/>
+    </datasets>
+    <datasets name="RTTratio">
+      <items xsi:type="scave:Add" filterPattern="module(TestNet.host[0..5].routingTable) AND name(hopCount:histogram:mean)"/>
+      <items xsi:type="scave:Add" filterPattern="module(TestNet.host[0..5].udpApp[11]) AND name(round*stats:mean)"/>
+      <items xsi:type="scave:BarChart" name="Rttcomparison">
+        <properties name="Bar.Placement" value="Overlap"/>
+      </items>
+    </datasets>
+  </datasets>
+  <chartSheets>
+    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.1 //@datasets/@datasets.1/@items.1 //@datasets/@datasets.2/@items.1 //@datasets/@datasets.3/@items.1 //@datasets/@datasets.4/@items.1 //@datasets/@datasets.5/@items.1 //@datasets/@datasets.6/@items.2"/>
+  </chartSheets>
+</scave:Analysis>

@@ -13,16 +13,15 @@ void DualSlopeModel::initializeFrom(cModule *radioModule)
     recvPower.setName("Dual Slope Received Power");
     WATCH(recvPower);
 
-    alphaFreeSpace = radioModule->par("alphaFreeSpace");
-    alphaObstacle = radioModule->par("alphaObstacle");
-    breakpointDistance = radioModule->par("breakpointDistance");
+    alphaFreeSpace = radioModule->par("alphaFreeSpace").longValue();
+    alphaObstacle = radioModule->par("alphaObstacle").longValue();
+    breakpointDistance = radioModule->par("breakpointDistance").longValue();
     smoothStep = radioModule->par("smoothStep").boolValue();
-
+    debugModel= radioModule->par("debugModel");
 
     if (alphaObstacle < alphaFreeSpace or alphaFreeSpace < 2)
         opp_error("You must set alphaObstacle to a value  greater than alphaFreeSpace \
-                and alphaFreeSpace to a value greater than 2, now they are %d, %d",
-                alphaObstacle, alphaFreeSpace);
+ and alphaFreeSpace to a value greater than 2, now they are %f, %f", alphaObstacle, alphaFreeSpace);
 
 }
 

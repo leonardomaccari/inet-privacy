@@ -57,6 +57,7 @@ class INET_API IPv4RouteRule : public cPolymorphic
         DROP,
         ACCEPT,
         NAT,
+        LOG,
         NONE
     };
     int hc; // hopcount, needed for some strategies
@@ -86,7 +87,7 @@ class INET_API IPv4RouteRule : public cPolymorphic
     bool enforced; // this means a rule is efectivaly working
 
     IPProtocolId protocol;
-    Rule     rule;
+    Rule    target;
     InterfaceEntry *interfacePtr; ///< interface
     std::map<int, Nat> natRule;
 
@@ -111,7 +112,7 @@ class INET_API IPv4RouteRule : public cPolymorphic
 
 
     void setInterface(InterfaceEntry *interfacePtr)  {this->interfacePtr = interfacePtr;}
-    void setRoule(Rule rule);
+    void setTarget(std::string target);
     void setProtocol(IPProtocolId protocol){this->protocol = protocol;}
 
     void activate(){active=true;}
@@ -137,7 +138,7 @@ class INET_API IPv4RouteRule : public cPolymorphic
     const char *getInterfaceName() const;
 
     /** Route type: Direct or Remote */
-    Rule getRule() const {return rule;}
+    Rule getTarget() const {return target;}
 };
 
 #endif // __INET_IPv4ROUTERULE_H

@@ -53,11 +53,14 @@ simple RoutingTable
                           // interface address; should be left empty ("") for hosts
         bool IPForward = default(true);  // turns IP forwarding on/off
         string routingFile = default("");  // routing table file name
-                string firewallFile = default("");
+        string firewallFile = default("");
         string firewallStrategy = default("NONE");
         int firewallRuleSetSize = default(1000000000); // keep all rules by default 
         int firewallMPRThreshold = default(-1);
-        
+        xml perfArray = xmldoc("performance.xml"); //, "node[@type='default']");
+        string nodePerformance = default("default"); // this switch introduces various kinds of nodes that add 
+        									  // a different delay when filtering a packet (see firewallStrategy.cc/h)
+        									  // if left blank filtering does not introduce delay
         double probFirewallOn = default(1); // probability to have firewall On, needed for batch simulations
         @statistic[routingTableSize](title="Routing table size"; record=vector); // routing table size logging
         @statistic[firewallTableSize](title="Firewall table size"; record=vector); // routing table size logging
@@ -66,6 +69,11 @@ simple RoutingTable
         @statistic[inputRulesMatch](title="Input rules matches"; record=histogram;); // input filter table matches
         @statistic[outputRulesMatch](title="Output rules matches statistics"; record=histogram;); // output rules match statistics
         @statistic[outputRulesMiss](title="Output rules missed statistics"; record=histogram;); // output rules match statistics
+        @statistic[postRoutingRulesMiss](title="PostRouting rules missed statistics"; record=histogram;); // post routing rules miss statistics
+        @statistic[postRoutingRulesMatch](title="PostRouting rules matched statistics"; record=histogram;); // post routing rules match statistics
+        
+        @statistic[globalRulesMiss](title="Global rules missed statistics"; record=histogram;); // rules match statistics
+        
         
         
         @display("i=block/table");

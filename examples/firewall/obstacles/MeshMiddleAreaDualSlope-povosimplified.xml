@@ -1,0 +1,11 @@
+<obstacles>
+<poly id="building#0" type="building" color="#F00" shape="8,226 131,226 131,424 8,424" />
+<poly id="building#1" type="building" color="#F00" shape="152,211 198,211 198,351 152,351" />
+<poly id="building#2" type="building" color="#F00" shape="336,275 434,275 434,416 336,416" />
+<poly id="building#3" type="building" color="#F00" shape="492,299 586,299 586,445 492,445" />
+<poly id="building#4" type="building" color="#F00" shape="284,498 433,498 433,580 284,580" />
+<poly id="building#5" type="building" color="#F00" shape="517,166 576,166 576,223 517,223" />
+<poly id="building#6" type="building" color="#F00" shape="506,20 545,20 545,69 506,69" />
+<poly id="building#7" type="building" color="#F00" shape="317,12 443,12 443,210 317,210" />
+</obstacles>
+

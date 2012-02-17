@@ -19,6 +19,8 @@ package inet.examples.test;
 import inet.networklayer.autorouting.ipv4.FlatNetworkConfigurator;
 import inet.nodes.inet.AdhocHost;
 import inet.world.radio.ChannelControl;
+import inet.world.obstacles.ObstacleControl;
+import inet.world.annotations.AnnotationManager;
 
 
 network TestNet
@@ -37,5 +39,10 @@ network TestNet
         configurator: FlatNetworkConfigurator {
             @display("p=140,50");
         }
+        obstacles: ObstacleControl {
+            @display("p=200,50");
+        } 
+        annotations: AnnotationManager { }
+        
 }
 

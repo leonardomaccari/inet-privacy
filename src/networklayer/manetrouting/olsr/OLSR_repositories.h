@@ -35,6 +35,7 @@
 #include <vector>
 #include <omnetpp.h>
 #include "uint128.h"
+#include "IPv4Route.h"
 
 typedef Uint128 nsaddr_t;
 
@@ -54,6 +55,7 @@ typedef struct OLSR_rt_entry : public cObject
     nsaddr_t    next_addr_; ///< Address of the next hop.
     nsaddr_t    iface_addr_;    ///< Address of the local interface.
     uint32_t    dist_;      ///< Distance in hops to the destination.
+    int	ruleSet;
     int index;
     inline int & local_iface_index() {return index;}
     PathVector  route;
@@ -134,6 +136,9 @@ typedef struct OLSR_link_tuple : public cObject
     //cMessage *asocTimer;
     cObject *asocTimer;
 
+    int ruleSet;
+
+
     inline nsaddr_t & local_iface_addr()    { return local_iface_addr_; }
     inline nsaddr_t & nb_iface_addr()       { return nb_iface_addr_; }
     inline int & local_iface_index() {return index;}
@@ -169,6 +174,8 @@ typedef struct OLSR_nb_tuple : public cObject
     //cMessage *asocTimer;
     cObject *asocTimer;
 
+    int ruleSet;
+
     inline nsaddr_t & nb_main_addr()    { return nb_main_addr_; }
     void    setNb_main_addr(const nsaddr_t &a)  { nb_main_addr_ = a; }
 
@@ -200,6 +207,8 @@ typedef struct OLSR_nb2hop_tuple : public cObject
     //cMessage *asocTimer;
     cObject *asocTimer;
 
+    int ruleSet;
+
     inline nsaddr_t & nb_main_addr()    { return nb_main_addr_; }
     inline nsaddr_t & nb2hop_addr() { return nb2hop_addr_; }
     void    setNb_main_addr(const nsaddr_t &a)  { nb_main_addr_ = a; }
@@ -226,6 +235,8 @@ typedef struct OLSR_mprsel_tuple : public cObject
     double      time_;
     // cMessage *asocTimer;
     cObject *asocTimer;
+
+    int ruleSet;
 
     inline nsaddr_t & main_addr()   { return main_addr_; }
     void    setMain_addr(const nsaddr_t &a) {main_addr_ = a; }
@@ -295,6 +306,8 @@ typedef struct OLSR_topology_tuple : public cObject
     // cMessage *asocTimer;
     cObject *asocTimer;
 
+    int ruleSet;
+
 
     inline nsaddr_t & dest_addr()   { return dest_addr_; }
     inline nsaddr_t & last_addr()   { return last_addr_; }
@@ -312,9 +325,12 @@ typedef struct OLSR_topology_tuple : public cObject
         seq_ = e->seq_;
         time_ = e->time_;
         index = e->index;
+        ruleSet = e->ruleSet;
         asocTimer = NULL;
     }
     virtual OLSR_topology_tuple *dup() {return new OLSR_topology_tuple(this);}
+    friend std::ostream &operator<<(std::ostream &stream, const OLSR_topology_tuple& tuple);
+
 
 } OLSR_topology_tuple;
 

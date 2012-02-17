@@ -146,6 +146,15 @@ Coord MobilityBase::getRandomPosition()
     return p;
 }
 
+Coord MobilityBase::getRandomPosition(const Coord leftUp, const Coord rightDown)
+{
+    Coord p;
+    p.x = uniform(leftUp.x, rightDown.x);
+    p.y = uniform(leftUp.y, rightDown.y);
+    p.z = uniform(leftUp.z, rightDown.z);
+    return p;
+}
+
 bool MobilityBase::isOutside()
 {
     return lastPosition.x < constraintAreaMin.x || lastPosition.x > constraintAreaMax.x

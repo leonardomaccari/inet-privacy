@@ -51,11 +51,23 @@ void UDPBasicApp::initialize(int stage)
     cStringTokenizer tokenizer(destAddrs);
     const char *token;
 
-// FIXME: re-enable manual choice of addresses for each application. Now only the address generator is used for any application
-
-    addressGeneratorModule = dynamic_cast<AddressGenerator*>(getParentModule()->getModuleByRelativePath("addressGenerator"));
-    if (addressGeneratorModule == 0)
-    	error("Wrong path to the address generator!?!?");
+    IPvXAddress myAddr = IPvXAddressResolver().resolve(this->getParentModule()->getFullPath().c_str());
+    while ((token = tokenizer.nextToken()) != NULL)
+    {
+        if (strstr(token, "Broadcast") != NULL)
+            destAddresses.push_back(IPv4Address::ALLONES_ADDRESS);
+        else
+        {
+            IPvXAddress addr = IPvXAddressResolver().resolve(token);
+            if (addr != myAddr)
+                destAddresses.push_back(addr);
+        }
+    }
+    if (destAddresses.size() == 0){
+    	addressGeneratorModule = dynamic_cast<AddressGenerator*>(getParentModule()->getModuleByRelativePath("addressGenerator"));
+    	if (addressGeneratorModule == 0)
+    		error("Wrong path to the address generator!?!?");
+    }
 
     socket.setOutputGate(gate("udpOut"));
     socket.bind(localPort);
@@ -80,6 +92,13 @@ void UDPBasicApp::finish()
 
 IPvXAddress UDPBasicApp::chooseDestAddr()
 {
+	if (destAddresses.size() == 1)
+	        return destAddresses[0];
+	else if(destAddresses.size() != 0){
+		int k = intrand(destAddresses.size());
+		return destAddresses[k];
+	}
+
 	std::map<IPv4Address, int> currentList = addressGeneratorModule->gatherAddresses();
 	if (currentList.empty())
 		return IPvXAddress();
@@ -111,7 +130,7 @@ void UDPBasicApp::sendPacket()
     }
     cPacket *payload = createPacket();
     emit(sentPkSignal, payload);
-    socket.sendTo(payload, destAddr, destPort);
+    socket.sendTo(payload, destAddr, par("destPort").longValue());
     numSent++;
 }
 

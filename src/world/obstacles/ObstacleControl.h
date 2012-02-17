@@ -50,6 +50,8 @@ class INET_API ObstacleControl : public cSimpleModule
         void addFromXml(cXMLElement* xml);
         void add(Obstacle obstacle);
         void erase(const Obstacle* obstacle);
+        const Obstacle * isInObstacle(const Coord& target);
+
 
         /**
          * calculate additional attenuation by obstacles, return signal strength

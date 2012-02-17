@@ -26,14 +26,17 @@ Define_Module(RandomWPMobility);
 RandomWPMobility::RandomWPMobility()
 {
     nextMoveIsWait = false;
+    walkedMeters = 0;
 }
 
 void RandomWPMobility::initialize(int stage)
 {
-    LineSegmentsMobilityBase::initialize(stage);
+	obstacleAvoidance = par("obstacleAvoidance").boolValue();
+	LineSegmentsMobilityBase::initialize(stage, obstacleAvoidance);
     if (stage == 0)
         stationary = (par("speed").getType()=='L' || par("speed").getType()=='D') && (double)par("speed") == 0;
 }
+
 
 void RandomWPMobility::setTargetPosition()
 {
@@ -44,7 +47,7 @@ void RandomWPMobility::setTargetPosition()
     }
     else
     {
-        targetPosition = getRandomPosition();
+        targetPosition = LineSegmentsMobilityBase::getRandomPositionWithObstacles();
         double speed = par("speed");
         double distance = lastPosition.distance(targetPosition);
         simtime_t travelTime = distance / speed;
@@ -56,5 +59,10 @@ void RandomWPMobility::setTargetPosition()
 void RandomWPMobility::move()
 {
     LineSegmentsMobilityBase::move();
-    raiseErrorIfOutside();
+    double angle = 0;
+
+   // see http://dev.omnetpp.org/bugs/view.php?id=527
+   // raiseErrorIfOutside();
+    reflectIfOutside(lastPosition, lastSpeed, angle);
 }
+

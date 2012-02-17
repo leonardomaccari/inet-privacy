@@ -325,7 +325,7 @@ class INET_API ManetRoutingBase : public cSimpleModule, public INotifiable, prot
     virtual bool getNextHopGroup(const AddressGroup &gr, Uint128 &add, int &iface, Uint128&){opp_error("getNextHopGroup, method is not implemented"); return false;}
     virtual int  getRouteGroup(const Uint128&, std::vector<Uint128> &, Uint128&, bool &, int group = 0){opp_error("getRouteGroup, method is not implemented"); return 0;}
     virtual bool getNextHopGroup(const Uint128&, Uint128 &add, int &iface, Uint128&, bool &, int group = 0){opp_error("getNextHopGroup, method is not implemented"); return false;}
-    virtual void enforceRuleset(bool output, int rSet){inet_rt->enforceRuleSet(output, rSet);};
+    virtual void enforceRuleset(CHAIN chain, int rSet){inet_rt->enforceRuleSet(chain, rSet);};
 };
 
 #define interface80211ptr getInterfaceWlanByAddress()

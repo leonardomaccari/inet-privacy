@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scave:Analysis xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:scave="http://www.omnetpp.org/omnetpp/scave">
+  <inputs>
+    <inputs name="/inet/examples/firewall/results/AdHocBigAreaSlowSquaredObstacles-*.vec"/>
+    <inputs name="/inet/examples/firewall/results/AdHocBigAreaSlowSquaredObstacles-*.sca"/>
+  </inputs>
+  <datasets>
+    <datasets name="packets">
+      <items xsi:type="scave:Add" filterPattern="module(*.host[0].udpApp[26]) AND name(&quot;Global packets arrived ratio&quot;)"/>
+      <items xsi:type="scave:Add" filterPattern="module(*.host[0].udpApp[26]) AND name(&quot;Global packets acked ratio&quot;)"/>
+      <items xsi:type="scave:Add" filterPattern="module(*.host[0].udpApp[26]) AND name(&quot;Global packets unsent ratio&quot;)"/>
+      <items xsi:type="scave:BarChart" name="Application performance">
+        <properties name="Graph.Title" value="Received/acked/unsent requests"/>
+        <properties name="Legend.Display" value="true"/>
+        <groupByFields>name</groupByFields>
+      </items>
+    </datasets>
+    <datasets name="routingtable">
+      <items xsi:type="scave:Add" filterPattern="module(*.routingTable)" type="VECTOR"/>
+      <items xsi:type="scave:Apply" operation="aggregator">
+        <params name="function" value="average"/>
+      </items>
+      <items xsi:type="scave:LineChart" name="routing table" lineNameFormat=""/>
+    </datasets>
+    <datasets name="hopcount">
+      <items xsi:type="scave:Add" filterPattern="module(*host[*].routingTable) AND name(hopCount:histogram:mean)"/>
+      <items xsi:type="scave:BarChart" name="Routes avg metric">
+        <properties name="Graph.Title" value="Routes avg metric"/>
+        <averagedFields>module</averagedFields>
+      </items>
+    </datasets>
+    <datasets name="RTTratio">
+      <items xsi:type="scave:Add" filterPattern="module(*.host[0].udpApp[26]) AND name(round*stats:mean)"/>
+      <items xsi:type="scave:BarChart" name="Rttcomparison"/>
+    </datasets>
+    <datasets name="Application absolute values">
+      <items xsi:type="scave:Add" filterPattern="module(*.host[0].udpApp[26]) AND name(&quot;Global requests sent&quot;)"/>
+      <items xsi:type="scave:Add" filterPattern="module(*.host[0].udpApp[26]) AND name(&quot;Global replies sent&quot;)"/>
+      <items xsi:type="scave:Add" filterPattern="module(*.host[0].udpApp[26]) AND name(&quot;Copies received&quot;)"/>
+      <items xsi:type="scave:Group" name="Queries">
+        <items xsi:type="scave:BarChart" name="Application absolute values">
+          <properties name="Graph.Title" value="Application absolute values"/>
+          <properties name="Legend.Display" value="true"/>
+        </items>
+      </items>
+    </datasets>
+    <datasets name="Global Chat sessions">
+      <items xsi:type="scave:Add" filterPattern="module(FirewallMeshNet.host[0].udpApp[0]) AND name(startedSessions:histogram:count)"/>
+      <items xsi:type="scave:Add" filterPattern="module(FirewallMeshNet.host[0].udpApp[0]) AND name(answeredSessions:histogram:count)"/>
+      <items xsi:type="scave:BarChart" name="Chat sessions (only host 0)">
+        <averagedFields>measurement</averagedFields>
+      </items>
+    </datasets>
+    <datasets name="Global chat packets">
+      <items xsi:type="scave:Add" filterPattern="module(FirewallMeshNet.host[0].udpApp[0]) AND name(rcvdPkBytes:count)"/>
+      <items xsi:type="scave:Add" filterPattern="module(FirewallMeshNet.host[0].udpApp[0]) AND name(sentPkBytes:count)"/>
+      <items xsi:type="scave:BarChart" name="Global Chat packets (only host 0)">
+        <averagedFields>measurement</averagedFields>
+      </items>
+    </datasets>
+  </datasets>
+  <chartSheets>
+    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.3 //@datasets/@datasets.1/@items.2 //@datasets/@datasets.2/@items.1 //@datasets/@datasets.3/@items.1 //@datasets/@datasets.4/@items.3/@items.0 //@datasets/@datasets.5/@items.2 //@datasets/@datasets.6/@items.2"/>
+    <chartSheets name="Global Performance" charts="//@datasets/@datasets.2/@items.1 //@datasets/@datasets.1/@items.2"/>
+    <chartSheets name="Absolute values" charts="//@datasets/@datasets.4/@items.3/@items.0"/>
+    <chartSheets name="Chat Application" charts="//@datasets/@datasets.6/@items.2 //@datasets/@datasets.5/@items.2"/>
+  </chartSheets>
+</scave:Analysis>

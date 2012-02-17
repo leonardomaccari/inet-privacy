@@ -67,7 +67,7 @@ void AddressGenerator::initialize(int stage)
 			opp_error("The routing table path is wrong!");
 		routingTable = static_cast<RoutingTable*>(module);
 
-		destAddresses = routingTable->gatherRoutes();
+		destAddresses = routingTable->gatherRoutes(routingTable->getRouterId());
 		if (par("nodeType").stdstringValue().compare(std::string("")) != 0){
 			nodeType = par("nodeType").stdstringValue();
 			chooseNodesByType();
@@ -273,7 +273,7 @@ void AddressGenerator::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage())
         scheduleAt(simTime()+updateTime, msg);
-    tmpList = routingTable->gatherRoutes();
+    tmpList = routingTable->gatherRoutes(routingTable->getRouterId());
     std::map<IPv4Address, int> oldList = destAddresses;
 	typePurge(tmpList);
     if (keepSetConsistent && tmpList.size() >= listSize)

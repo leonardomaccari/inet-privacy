@@ -31,7 +31,7 @@ ObstacleControl::~ObstacleControl() {
 }
 
 void ObstacleControl::initialize(int stage) {
-    if (stage == 1) {
+    if (stage == 0) {
         debug = par("debug");
 
         obstacles.clear();
@@ -74,7 +74,6 @@ void ObstacleControl::addFromXml(cXMLElement* xml) {
     cXMLElementList list = xml->getChildren();
     for (cXMLElementList::const_iterator i = list.begin(); i != list.end(); ++i) {
         cXMLElement* e = *i;
-
         std::string tag = e->getTagName();
         ASSERT(tag == "poly");
 
@@ -95,12 +94,15 @@ void ObstacleControl::addFromXml(cXMLElement* xml) {
         Obstacle obs(id, attenuationPerWall, attenuationPerMeter);
         std::vector<Coord> sh;
         cStringTokenizer st(shape.c_str());
+        DEBUG_OUT << "Adding Obstacle ";
         while (st.hasMoreTokens()) {
             std::string xy = st.nextToken();
             std::vector<double> xya = cStringTokenizer(xy.c_str(), ",").asDoubleVector();
             ASSERT(xya.size() == 2);
             sh.push_back(Coord(xya[0], xya[1]));
+            DEBUG_OUT << xya[0] << "," << xya[1] << " ";
         }
+        DEBUG_OUT << std::endl;
         obs.setShape(sh);
         add(obs);
 
@@ -125,7 +127,6 @@ void ObstacleControl::add(Obstacle obstacle) {
 
     // visualize using AnnotationManager
     if (annotations) o->visualRepresentation = annotations->drawPolygon(o->getShape(), "red", annotationGroup);
-
     cacheEntries.clear();
 }
 
@@ -205,3 +206,37 @@ double ObstacleControl::calculateReceivedPower(double pSend, double carrierFrequ
 
     return pSend;
 }
+
+
+// return true if the point is inside at least one obstacle
+const Obstacle * ObstacleControl::isInObstacle(const Coord& target){
+    Enter_Method_Silent();
+
+    // return cached result, if available
+    size_t Row = std::max(0, int(target.x) / GRIDCELL_SIZE);
+    size_t Col = std::max(0, int(target.y) / GRIDCELL_SIZE);
+    if (Col >= obstacles.size())
+    	return 0;
+    if (Row >= obstacles[Col].size())
+    	return 0;
+    const ObstacleGridCell& cell = (obstacles[Col])[Row];
+    for (ObstacleGridCell::const_iterator k = cell.begin(); k != cell.end(); ++k) {
+
+    	Obstacle* o = *k;
+
+    	//if (isPointInObstacle(target, o_r)){
+    	if (o->getBboxP1().x <= target.x &&
+    			o->getBboxP2().x >= target.x &&
+    			o->getBboxP1().y <= target.y &&
+    			o->getBboxP2().y >= target.y){
+        	// draw a "hit!" bubble
+            if (annotations) annotations->drawBubble(o->getBboxP1(), "Obstacle!");
+            	DEBUG_OUT << target << " is not in " << o->getBboxP1().x << " " << o->getBboxP1().y << std::endl;
+
+        	return o;
+    	}
+
+    }
+    return 0;
+}
+

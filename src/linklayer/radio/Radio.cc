@@ -534,7 +534,6 @@ void Radio::handleLowerMsgStart(AirFrame* airframe)
 
     if (distance<MIN_DISTANCE)
         distance = MIN_DISTANCE;
-
     double rcvdPower = receptionModel->calculateReceivedPower(airframe->getPSend(), frequency, distance);
     if (obstacles && distance > MIN_DISTANCE)
         rcvdPower = obstacles->calculateReceivedPower(rcvdPower, carrierFrequency, framePos, 0, getRadioPosition(), 0);

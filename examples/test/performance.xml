@@ -1,0 +1,1233 @@
+<root>
+<node type="test">
+<rset size="2">
+ <delay>
+  0.1
+ </delay>
+</rset>
+<rset size="3">
+ <delay>
+  0.15
+ </delay>
+</rset>
+</node>
+
+<node type="default">
+<rset size="50000">
+ <delay>
+  0
+ </delay>
+</rset>
+</node>
+<node type="atom">
+<rset size="0">
+ <delay>
+  0.000767
+ </delay>
+</rset>
+<rset size="100">
+ <delay>
+  0.000768
+ </delay>
+</rset>
+<rset size="200">
+ <delay>
+  0.000807
+ </delay>
+</rset>
+<rset size="300">
+ <delay>
+  0.000832
+ </delay>
+</rset>
+<rset size="400">
+ <delay>
+  0.000837
+ </delay>
+</rset>
+<rset size="500">
+ <delay>
+  0.000855
+ </delay>
+</rset>
+<rset size="600">
+ <delay>
+  0.000869
+ </delay>
+</rset>
+<rset size="700">
+ <delay>
+  0.000938
+ </delay>
+</rset>
+<rset size="800">
+ <delay>
+  0.000900
+ </delay>
+</rset>
+<rset size="900">
+ <delay>
+  0.000919
+ </delay>
+</rset>
+<rset size="1000">
+ <delay>
+  0.000931
+ </delay>
+</rset>
+<rset size="1100">
+ <delay>
+  0.000958
+ </delay>
+</rset>
+<rset size="1200">
+ <delay>
+  0.000965
+ </delay>
+</rset>
+<rset size="1300">
+ <delay>
+  0.000989
+ </delay>
+</rset>
+<rset size="1400">
+ <delay>
+  0.000994
+ </delay>
+</rset>
+<rset size="1500">
+ <delay>
+  0.001015
+ </delay>
+</rset>
+<rset size="1600">
+ <delay>
+  0.001037
+ </delay>
+</rset>
+<rset size="1700">
+ <delay>
+  0.001062
+ </delay>
+</rset>
+<rset size="1800">
+ <delay>
+  0.001079
+ </delay>
+</rset>
+<rset size="1900">
+ <delay>
+  0.001097
+ </delay>
+</rset>
+<rset size="2000">
+ <delay>
+  0.001111
+ </delay>
+</rset>
+<rset size="2100">
+ <delay>
+  0.001130
+ </delay>
+</rset>
+<rset size="2200">
+ <delay>
+  0.001143
+ </delay>
+</rset>
+<rset size="2300">
+ <delay>
+  0.001169
+ </delay>
+</rset>
+<rset size="2400">
+ <delay>
+  0.001172
+ </delay>
+</rset>
+<rset size="2500">
+ <delay>
+  0.001205
+ </delay>
+</rset>
+<rset size="2600">
+ <delay>
+  0.001198
+ </delay>
+</rset>
+<rset size="2700">
+ <delay>
+  0.001215
+ </delay>
+</rset>
+<rset size="2800">
+ <delay>
+  0.001252
+ </delay>
+</rset>
+<rset size="2900">
+ <delay>
+  0.001264
+ </delay>
+</rset>
+<rset size="3000">
+ <delay>
+  0.001283
+ </delay>
+</rset>
+<rset size="3100">
+ <delay>
+  0.001303
+ </delay>
+</rset>
+<rset size="3200">
+ <delay>
+  0.001312
+ </delay>
+</rset>
+<rset size="3300">
+ <delay>
+  0.001357
+ </delay>
+</rset>
+<rset size="3400">
+ <delay>
+  0.001336
+ </delay>
+</rset>
+<rset size="3500">
+ <delay>
+  0.001375
+ </delay>
+</rset>
+<rset size="3600">
+ <delay>
+  0.001373
+ </delay>
+</rset>
+<rset size="3700">
+ <delay>
+  0.001375
+ </delay>
+</rset>
+<rset size="3800">
+ <delay>
+  0.001386
+ </delay>
+</rset>
+<rset size="3900">
+ <delay>
+  0.001399
+ </delay>
+</rset>
+<rset size="4000">
+ <delay>
+  0.001418
+ </delay>
+</rset>
+<rset size="4100">
+ <delay>
+  0.001448
+ </delay>
+</rset>
+<rset size="4200">
+ <delay>
+  0.001450
+ </delay>
+</rset>
+<rset size="4300">
+ <delay>
+  0.001453
+ </delay>
+</rset>
+<rset size="4400">
+ <delay>
+  0.001482
+ </delay>
+</rset>
+<rset size="4500">
+ <delay>
+  0.001487
+ </delay>
+</rset>
+<rset size="4600">
+ <delay>
+  0.001509
+ </delay>
+</rset>
+<rset size="4700">
+ <delay>
+  0.001511
+ </delay>
+</rset>
+<rset size="4800">
+ <delay>
+  0.001527
+ </delay>
+</rset>
+<rset size="4900">
+ <delay>
+  0.001541
+ </delay>
+</rset>
+<rset size="5000">
+ <delay>
+  0.001547
+ </delay>
+</rset>
+<rset size="6000">
+ <delay>
+  0.001730
+ </delay>
+</rset>
+<rset size="7000">
+ <delay>
+  0.001851
+ </delay>
+</rset>
+<rset size="8000">
+ <delay>
+  0.001983
+ </delay>
+</rset>
+<rset size="9000">
+ <delay>
+  0.002140
+ </delay>
+</rset>
+<rset size="10000">
+ <delay>
+  0.002278
+ </delay>
+</rset>
+<rset size="11000">
+ <delay>
+  0.002416
+ </delay>
+</rset>
+<rset size="12000">
+ <delay>
+  0.002573
+ </delay>
+</rset>
+<rset size="13000">
+ <delay>
+  0.002692
+ </delay>
+</rset>
+<rset size="14000">
+ <delay>
+  0.002946
+ </delay>
+</rset>
+<rset size="15000">
+ <delay>
+  0.003112
+ </delay>
+</rset>
+<rset size="16000">
+ <delay>
+  0.003231
+ </delay>
+</rset>
+<rset size="17000">
+ <delay>
+  0.003358
+ </delay>
+</rset>
+<rset size="18000">
+ <delay>
+  0.003483
+ </delay>
+</rset>
+<rset size="19000">
+ <delay>
+  0.003558
+ </delay>
+</rset>
+<rset size="20000">
+ <delay>
+  0.003749
+ </delay>
+</rset>
+<rset size="21000">
+ <delay>
+  0.003895
+ </delay>
+</rset>
+<rset size="22000">
+ <delay>
+  0.004162
+ </delay>
+</rset>
+<rset size="23000">
+ <delay>
+  0.004369
+ </delay>
+</rset>
+<rset size="24000">
+ <delay>
+  0.004263
+ </delay>
+</rset>
+<rset size="25000">
+ <delay>
+  0.004612
+ </delay>
+</rset>
+<rset size="26000">
+ <delay>
+  0.004558
+ </delay>
+</rset>
+<rset size="27000">
+ <delay>
+  0.004715
+ </delay>
+</rset>
+<rset size="28000">
+ <delay>
+  0.004829
+ </delay>
+</rset>
+<rset size="29000">
+ <delay>
+  0.004986
+ </delay>
+</rset>
+<rset size="30000">
+ <delay>
+  0.005231
+ </delay>
+</rset>
+<rset size="31000">
+ <delay>
+  0.005435
+ </delay>
+</rset>
+<rset size="32000">
+ <delay>
+  0.005745
+ </delay>
+</rset>
+<rset size="33000">
+ <delay>
+  0.006043
+ </delay>
+</rset>
+<rset size="34000">
+ <delay>
+  0.005993
+ </delay>
+</rset>
+<rset size="35000">
+ <delay>
+  0.006094
+ </delay>
+</rset>
+<rset size="36000">
+ <delay>
+  0.006437
+ </delay>
+</rset>
+<rset size="37000">
+ <delay>
+  0.006301
+ </delay>
+</rset>
+<rset size="38000">
+ <delay>
+  0.006596
+ </delay>
+</rset>
+<rset size="39000">
+ <delay>
+  0.006792
+ </delay>
+</rset>
+<rset size="40000">
+ <delay>
+  0.006926
+ </delay>
+</rset>
+<rset size="41000">
+ <delay>
+  0.007069
+ </delay>
+</rset>
+<rset size="42000">
+ <delay>
+  0.007272
+ </delay>
+</rset>
+<rset size="43000">
+ <delay>
+  0.007441
+ </delay>
+</rset>
+<rset size="44000">
+ <delay>
+  0.007490
+ </delay>
+</rset>
+<rset size="45000">
+ <delay>
+  0.007804
+ </delay>
+</rset>
+<rset size="46000">
+ <delay>
+  0.007950
+ </delay>
+</rset>
+<rset size="47000">
+ <delay>
+  0.007993
+ </delay>
+</rset>
+<rset size="48000">
+ <delay>
+  0.008237
+ </delay>
+</rset>
+<rset size="49000">
+ <delay>
+  0.008390
+ </delay>
+</rset>
+<rset size="50000">
+ <delay>
+  0.008586
+ </delay>
+</rset>
+</node>
+<node type="moko">
+<rset size="0">
+ <delay>
+  0.001810
+ </delay>
+</rset>
+<rset size="100">
+ <delay>
+  0.002032
+ </delay>
+</rset>
+<rset size="200">
+ <delay>
+  0.002305
+ </delay>
+</rset>
+<rset size="300">
+ <delay>
+  0.002436
+ </delay>
+</rset>
+<rset size="400">
+ <delay>
+  0.002703
+ </delay>
+</rset>
+<rset size="500">
+ <delay>
+  0.002855
+ </delay>
+</rset>
+<rset size="600">
+ <delay>
+  0.003098
+ </delay>
+</rset>
+<rset size="700">
+ <delay>
+  0.003288
+ </delay>
+</rset>
+<rset size="800">
+ <delay>
+  0.003503
+ </delay>
+</rset>
+<rset size="900">
+ <delay>
+  0.003713
+ </delay>
+</rset>
+<rset size="1000">
+ <delay>
+  0.003880
+ </delay>
+</rset>
+<rset size="1100">
+ <delay>
+  0.004131
+ </delay>
+</rset>
+<rset size="1200">
+ <delay>
+  0.004329
+ </delay>
+</rset>
+<rset size="1300">
+ <delay>
+  0.004538
+ </delay>
+</rset>
+<rset size="1400">
+ <delay>
+  0.004746
+ </delay>
+</rset>
+<rset size="1500">
+ <delay>
+  0.004889
+ </delay>
+</rset>
+<rset size="1600">
+ <delay>
+  0.005125
+ </delay>
+</rset>
+<rset size="1700">
+ <delay>
+  0.005384
+ </delay>
+</rset>
+<rset size="1800">
+ <delay>
+  0.005561
+ </delay>
+</rset>
+<rset size="1900">
+ <delay>
+  0.005816
+ </delay>
+</rset>
+<rset size="2000">
+ <delay>
+  0.005969
+ </delay>
+</rset>
+<rset size="2100">
+ <delay>
+  0.006181
+ </delay>
+</rset>
+<rset size="2200">
+ <delay>
+  0.006413
+ </delay>
+</rset>
+<rset size="2300">
+ <delay>
+  0.006608
+ </delay>
+</rset>
+<rset size="2400">
+ <delay>
+  0.006820
+ </delay>
+</rset>
+<rset size="2500">
+ <delay>
+  0.007014
+ </delay>
+</rset>
+<rset size="2600">
+ <delay>
+  0.007239
+ </delay>
+</rset>
+<rset size="2700">
+ <delay>
+  0.007424
+ </delay>
+</rset>
+<rset size="2800">
+ <delay>
+  0.007636
+ </delay>
+</rset>
+<rset size="2900">
+ <delay>
+  0.007824
+ </delay>
+</rset>
+<rset size="3000">
+ <delay>
+  0.008045
+ </delay>
+</rset>
+<rset size="3100">
+ <delay>
+  0.008236
+ </delay>
+</rset>
+<rset size="3200">
+ <delay>
+  0.008483
+ </delay>
+</rset>
+<rset size="3300">
+ <delay>
+  0.008680
+ </delay>
+</rset>
+<rset size="3400">
+ <delay>
+  0.008861
+ </delay>
+</rset>
+<rset size="3500">
+ <delay>
+  0.009107
+ </delay>
+</rset>
+<rset size="3600">
+ <delay>
+  0.009318
+ </delay>
+</rset>
+<rset size="3700">
+ <delay>
+  0.009581
+ </delay>
+</rset>
+<rset size="3800">
+ <delay>
+  0.009806
+ </delay>
+</rset>
+<rset size="3900">
+ <delay>
+  0.009964
+ </delay>
+</rset>
+<rset size="4000">
+ <delay>
+  0.010181
+ </delay>
+</rset>
+<rset size="4100">
+ <delay>
+  0.010364
+ </delay>
+</rset>
+<rset size="4200">
+ <delay>
+  0.010574
+ </delay>
+</rset>
+<rset size="4300">
+ <delay>
+  0.010792
+ </delay>
+</rset>
+<rset size="4400">
+ <delay>
+  0.010982
+ </delay>
+</rset>
+<rset size="4500">
+ <delay>
+  0.011241
+ </delay>
+</rset>
+<rset size="4600">
+ <delay>
+  0.011391
+ </delay>
+</rset>
+<rset size="4700">
+ <delay>
+  0.011591
+ </delay>
+</rset>
+<rset size="4800">
+ <delay>
+  0.011836
+ </delay>
+</rset>
+<rset size="4900">
+ <delay>
+  0.012015
+ </delay>
+</rset>
+<rset size="5000">
+ <delay>
+  0.012204
+ </delay>
+</rset>
+</node>
+<node type="n900">
+<rset size="0">
+ <delay>
+  0.000566
+ </delay>
+</rset>
+<rset size="100">
+ <delay>
+  0.000651
+ </delay>
+</rset>
+<rset size="200">
+ <delay>
+  0.000801
+ </delay>
+</rset>
+<rset size="300">
+ <delay>
+  0.000775
+ </delay>
+</rset>
+<rset size="400">
+ <delay>
+  0.000881
+ </delay>
+</rset>
+<rset size="500">
+ <delay>
+  0.001012
+ </delay>
+</rset>
+<rset size="600">
+ <delay>
+  0.001600
+ </delay>
+</rset>
+<rset size="700">
+ <delay>
+  0.001180
+ </delay>
+</rset>
+<rset size="800">
+ <delay>
+  0.001446
+ </delay>
+</rset>
+<rset size="900">
+ <delay>
+  0.001373
+ </delay>
+</rset>
+<rset size="1000">
+ <delay>
+  0.001502
+ </delay>
+</rset>
+<rset size="1100">
+ <delay>
+  0.001565
+ </delay>
+</rset>
+<rset size="1200">
+ <delay>
+  0.001757
+ </delay>
+</rset>
+<rset size="1300">
+ <delay>
+  0.001863
+ </delay>
+</rset>
+<rset size="1400">
+ <delay>
+  0.001980
+ </delay>
+</rset>
+<rset size="1500">
+ <delay>
+  0.002081
+ </delay>
+</rset>
+<rset size="1600">
+ <delay>
+  0.002263
+ </delay>
+</rset>
+<rset size="1700">
+ <delay>
+  0.002810
+ </delay>
+</rset>
+<rset size="1800">
+ <delay>
+  0.002504
+ </delay>
+</rset>
+<rset size="1900">
+ <delay>
+  0.002601
+ </delay>
+</rset>
+<rset size="2000">
+ <delay>
+  0.002717
+ </delay>
+</rset>
+<rset size="2100">
+ <delay>
+  0.002860
+ </delay>
+</rset>
+<rset size="2200">
+ <delay>
+  0.003018
+ </delay>
+</rset>
+<rset size="2300">
+ <delay>
+  0.003138
+ </delay>
+</rset>
+<rset size="2400">
+ <delay>
+  0.003260
+ </delay>
+</rset>
+<rset size="2500">
+ <delay>
+  0.003375
+ </delay>
+</rset>
+<rset size="2600">
+ <delay>
+  0.003502
+ </delay>
+</rset>
+<rset size="2700">
+ <delay>
+  0.003587
+ </delay>
+</rset>
+<rset size="2800">
+ <delay>
+  0.003770
+ </delay>
+</rset>
+<rset size="2900">
+ <delay>
+  0.003927
+ </delay>
+</rset>
+<rset size="3000">
+ <delay>
+  0.004048
+ </delay>
+</rset>
+<rset size="3100">
+ <delay>
+  0.004137
+ </delay>
+</rset>
+<rset size="3200">
+ <delay>
+  0.004201
+ </delay>
+</rset>
+<rset size="3300">
+ <delay>
+  0.004397
+ </delay>
+</rset>
+<rset size="3400">
+ <delay>
+  0.004563
+ </delay>
+</rset>
+<rset size="3500">
+ <delay>
+  0.004679
+ </delay>
+</rset>
+<rset size="3600">
+ <delay>
+  0.004733
+ </delay>
+</rset>
+<rset size="3700">
+ <delay>
+  0.004888
+ </delay>
+</rset>
+<rset size="3800">
+ <delay>
+  0.005054
+ </delay>
+</rset>
+<rset size="3900">
+ <delay>
+  0.005190
+ </delay>
+</rset>
+<rset size="4000">
+ <delay>
+  0.005274
+ </delay>
+</rset>
+<rset size="4100">
+ <delay>
+  0.005383
+ </delay>
+</rset>
+<rset size="4200">
+ <delay>
+  0.005542
+ </delay>
+</rset>
+<rset size="4300">
+ <delay>
+  0.005707
+ </delay>
+</rset>
+<rset size="4400">
+ <delay>
+  0.005766
+ </delay>
+</rset>
+<rset size="4500">
+ <delay>
+  0.005879
+ </delay>
+</rset>
+<rset size="4600">
+ <delay>
+  0.005980
+ </delay>
+</rset>
+<rset size="4700">
+ <delay>
+  0.006081
+ </delay>
+</rset>
+<rset size="4800">
+ <delay>
+  0.006183
+ </delay>
+</rset>
+<rset size="4900">
+ <delay>
+  0.006345
+ </delay>
+</rset>
+<rset size="5000">
+ <delay>
+  0.006433
+ </delay>
+</rset>
+<rset size="6000">
+ <delay>
+  0.007707
+ </delay>
+</rset>
+<rset size="7000">
+ <delay>
+  0.008867
+ </delay>
+</rset>
+<rset size="8000">
+ <delay>
+  0.010086
+ </delay>
+</rset>
+<rset size="9000">
+ <delay>
+  0.011194
+ </delay>
+</rset>
+<rset size="10000">
+ <delay>
+  0.012352
+ </delay>
+</rset>
+<rset size="11000">
+ <delay>
+  0.013496
+ </delay>
+</rset>
+<rset size="12000">
+ <delay>
+  0.014657
+ </delay>
+</rset>
+<rset size="13000">
+ <delay>
+  0.015839
+ </delay>
+</rset>
+<rset size="14000">
+ <delay>
+  0.016933
+ </delay>
+</rset>
+<rset size="15000">
+ <delay>
+  0.018155
+ </delay>
+</rset>
+<rset size="16000">
+ <delay>
+  0.019230
+ </delay>
+</rset>
+<rset size="17000">
+ <delay>
+  0.020472
+ </delay>
+</rset>
+<rset size="18000">
+ <delay>
+  0.021543
+ </delay>
+</rset>
+<rset size="19000">
+ <delay>
+  0.022660
+ </delay>
+</rset>
+<rset size="20000">
+ <delay>
+  0.024258
+ </delay>
+</rset>
+<rset size="21000">
+ <delay>
+  0.024943
+ </delay>
+</rset>
+<rset size="22000">
+ <delay>
+  0.026212
+ </delay>
+</rset>
+<rset size="23000">
+ <delay>
+  0.027243
+ </delay>
+</rset>
+<rset size="24000">
+ <delay>
+  0.028262
+ </delay>
+</rset>
+<rset size="25000">
+ <delay>
+  0.029327
+ </delay>
+</rset>
+<rset size="26000">
+ <delay>
+  0.030644
+ </delay>
+</rset>
+<rset size="27000">
+ <delay>
+  0.032675
+ </delay>
+</rset>
+<rset size="28000">
+ <delay>
+  0.032776
+ </delay>
+</rset>
+<rset size="29000">
+ <delay>
+  0.034050
+ </delay>
+</rset>
+<rset size="30000">
+ <delay>
+  0.035587
+ </delay>
+</rset>
+<rset size="31000">
+ <delay>
+  0.036895
+ </delay>
+</rset>
+<rset size="32000">
+ <delay>
+  0.037903
+ </delay>
+</rset>
+<rset size="33000">
+ <delay>
+  0.038281
+ </delay>
+</rset>
+<rset size="34000">
+ <delay>
+  0.039546
+ </delay>
+</rset>
+<rset size="35000">
+ <delay>
+  0.041179
+ </delay>
+</rset>
+<rset size="36000">
+ <delay>
+  0.042242
+ </delay>
+</rset>
+<rset size="37000">
+ <delay>
+  0.043025
+ </delay>
+</rset>
+<rset size="38000">
+ <delay>
+  0.044090
+ </delay>
+</rset>
+<rset size="39000">
+ <delay>
+  0.045823
+ </delay>
+</rset>
+<rset size="40000">
+ <delay>
+  0.046520
+ </delay>
+</rset>
+<rset size="41000">
+ <delay>
+  0.048552
+ </delay>
+</rset>
+<rset size="42000">
+ <delay>
+  0.049152
+ </delay>
+</rset>
+<rset size="43000">
+ <delay>
+  0.049985
+ </delay>
+</rset>
+<rset size="44000">
+ <delay>
+  0.051896
+ </delay>
+</rset>
+<rset size="45000">
+ <delay>
+  0.052912
+ </delay>
+</rset>
+<rset size="46000">
+ <delay>
+  0.053325
+ </delay>
+</rset>
+<rset size="47000">
+ <delay>
+  0.055013
+ </delay>
+</rset>
+<rset size="48000">
+ <delay>
+  0.056577
+ </delay>
+</rset>
+</node>
+</root>

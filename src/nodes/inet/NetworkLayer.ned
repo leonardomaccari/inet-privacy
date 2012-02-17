@@ -23,6 +23,7 @@ import inet.networklayer.ipv4.IGMP;
 import inet.networklayer.ipv4.ICMP;
 import inet.networklayer.ipv4.ErrorHandling;
 import inet.networklayer.arp.ARP;
+import inet.base.DynamicQueue;
 
 
 //
@@ -35,6 +36,7 @@ module NetworkLayer
     parameters:
         @display("i=block/fork");
         bool proxyARP = default(true);
+        bool isFirewallDelayActive = default(false);
     gates:
         input ifIn[] @labels(IPv4Datagram);
         input tcpIn @labels(TCPSegment,IPv4ControlInfo/down);
@@ -63,10 +65,18 @@ module NetworkLayer
                 transportOut[8];
                 queueIn[sizeof(ifIn)];
         }
+        firewallDelay: DynamicQueue {
+            parameters: 
+                procDelay = 0s;
+                 @display("p=160,120;q=queue_s");
+            gates:
+                queueIn;
+                queueOut;
+        }
         arp: ARP {
             parameters:
                 proxyARP = proxyARP;
-                @display("p=202,142;q=pendingQueue");
+                @display("p=202,162;q=pendingQueue");
             gates:
                 nicOut[sizeof(ifOut)];
         }
@@ -114,7 +124,8 @@ module NetworkLayer
 
         icmp.errorOut --> errorHandling.in;
 
-        ip.queueOut --> arp.ipIn;
+        ip.queueOut --> firewallDelay.queueIn;
+        firewallDelay.queueOut --> arp.ipIn;
 
         for i=0..sizeof(ifIn)-1 {
             ifIn[i] --> ip.queueIn[i];

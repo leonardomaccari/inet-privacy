@@ -58,6 +58,7 @@ class OLSR_rtable : public cObject
     OLSR_rt_entry*  add_entry(const nsaddr_t &dest, const nsaddr_t &next, const nsaddr_t &iface, uint32_t dist, const int &);
     OLSR_rt_entry*  add_entry(const nsaddr_t &dest, const nsaddr_t &next, const nsaddr_t &iface, uint32_t dist, const int &, PathVector path);
     OLSR_rt_entry*  add_entry(const nsaddr_t &dest, const nsaddr_t &next, const nsaddr_t &iface, uint32_t dist, const int &, OLSR_rt_entry *entry);
+    OLSR_rt_entry*  add_entry(const nsaddr_t &dest, const nsaddr_t &next, const nsaddr_t &iface, uint32_t dist, const int &, OLSR_rt_entry *entry, int rset);
     OLSR_rt_entry*  lookup(const nsaddr_t &dest);
     OLSR_rt_entry*  find_send_entry(OLSR_rt_entry*);
     uint32_t    size();

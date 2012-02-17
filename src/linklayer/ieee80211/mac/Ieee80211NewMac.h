@@ -194,7 +194,6 @@ class INET_API Ieee80211NewMac : public WirelessMacBase, public INotifiable
     };
   protected:
     cFSM fsm;
-    bool fixFSM;
 
     struct Edca {
         simtime_t TXOP;

@@ -104,6 +104,9 @@ class INET_API MobilityBase : public BasicModule, public IMobility
     /** @brief Returns a new random position satisfying the constraint area. */
     virtual Coord getRandomPosition();
 
+    /** @brief Returns a random position satisfying any given area */
+    Coord getRandomPosition(const Coord leftUp, const Coord rightDown);
+
     /** @brief Returns the module that represents the object moved by this mobility module. */
     virtual cModule *findVisualRepresentation() { return findHost(); }
 

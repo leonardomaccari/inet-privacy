@@ -77,6 +77,7 @@ typedef struct cellsItem{
 class INET_API MusolesiMobility : public LineSegmentsMobilityBase
 {
   protected: // mixed arguments from Musolesi code
+	bool obstacleAvoidance;
     double minHostSpeed;
     double maxHostSpeed;
     int numberOfRows; 
@@ -104,7 +105,7 @@ class INET_API MusolesiMobility : public LineSegmentsMobilityBase
     double drift;
     double expmean;
     bool reshufflePositionsOnly;
-
+    int myGroup;
 	bool recordStatistics;
     Coord areaTopLeft, areaBottomRight;
     
@@ -145,6 +146,8 @@ class INET_API MusolesiMobility : public LineSegmentsMobilityBase
     virtual void handleSelfMsg(cMessage* msg);
     virtual void handleMessage(cMessage* msg);
     void move();
+    Coord getRandomPointWithObstacles(int minX, int minY);
+
 
 };
 

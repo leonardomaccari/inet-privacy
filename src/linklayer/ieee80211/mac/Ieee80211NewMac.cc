@@ -126,8 +126,6 @@ void Ieee80211NewMac::initialize(int stage)
             edcCAF.push_back(catEdca);
         }
         // initialize parameters
-        // Variable to apply the fsm fix
-        fixFSM = par("fixFSM");
         if (strcmp("b", par("opMode").stringValue())==0)
             opMode = 'b';
         else if (strcmp("g", par("opMode").stringValue())==0)
@@ -981,38 +979,18 @@ void Ieee80211NewMac::handleWithFSM(cMessage *msg)
         FSMA_State(IDLE)
         {
             FSMA_Enter(sendDownPendingRadioConfigMsg());
-            /*
-            if (fixFSM)
-            {
-            FSMA_Event_Transition(Data-Ready,
-                                  // isUpperMsg(msg),
-                                  isUpperMsg(msg) && backoffPeriod[currentAC] > 0,
-                                  DEFER,
-                //ASSERT(isInvalidBackoffPeriod() || backoffPeriod == 0);
-                //invalidateBackoffPeriod();
-               ASSERT(false);
-
-            );
-            FSMA_No_Event_Transition(Immediate-Data-Ready,
-                                     //!transmissionQueue.empty(),
-                !transmissionQueueEmpty(),
-                                     DEFER,
-              //  invalidateBackoffPeriod();
-                ASSERT(backoff[currentAC]);
-
-            );
-            }
-            */
             FSMA_Event_Transition(Data-Ready,
                                   isUpperMsg(msg),
                                   DEFER,
                                   ASSERT(isInvalidBackoffPeriod() || backoffPeriod() == 0);
+			                      ASSERT(retryCounter() == 0);
                                   invalidateBackoffPeriod();
                                  );
             FSMA_No_Event_Transition(Immediate-Data-Ready,
                                      !transmissionQueueEmpty(),
                                      DEFER,
-                                     invalidateBackoffPeriod();
+									 if (retryCounter() == 0)
+										invalidateBackoffPeriod();
                                     );
             FSMA_Event_Transition(Receive,
                                   isLowerMsg(msg),
@@ -1294,6 +1272,22 @@ void Ieee80211NewMac::handleWithFSM(cMessage *msg)
                                   txop = false;
                                   if (endTXOP->isScheduled()) cancelEvent(endTXOP);
                                  );
+            FSMA_Event_Transition(Interrupted-ACK-Failure,
+                                  isLowerMsg(msg) && retryCounter() == transmissionLimit - 1,
+                                  RECEIVE,
+                                  currentAC=oldcurrentAC;
+                                  giveUpCurrentTransmission();
+                                  txop = false;
+                                  if (endTXOP->isScheduled()) cancelEvent(endTXOP);
+                                 );
+            FSMA_Event_Transition(Retry-Interrupted-ACK,
+                                  isLowerMsg(msg),
+                                  RECEIVE,
+                                  currentAC=oldcurrentAC;
+                                  retryCurrentTransmission();
+                                  txop = false;
+                                  if (endTXOP->isScheduled()) cancelEvent(endTXOP);
+                                 );
         }
         // wait until multicast is sent
         FSMA_State(WAITMULTICAST)
@@ -1350,34 +1344,25 @@ void Ieee80211NewMac::handleWithFSM(cMessage *msg)
                                   msg == endSIFS && getFrameReceivedBeforeSIFS()->getType() == ST_ACK,
                                   WAITACK,
                                   sendDataFrame(getCurrentTransmission());
-                                 );
-            FSMA_Event_Transition(Transmit-Data-TXOP,
-                                  msg == endSIFS && getFrameReceivedBeforeSIFS()->getType() == ST_ACK,
-                                  WAITACK,
-                                  sendDataFrame(getCurrentTransmission());
+                                  oldcurrentAC = currentAC;
                                  );
             FSMA_Event_Transition(Transmit-CTS,
                                   msg == endSIFS && getFrameReceivedBeforeSIFS()->getType() == ST_RTS,
                                   IDLE,
                                   sendCTSFrameOnEndSIFS();
-                                  if (fixFSM)
-                                      finishReception();
-                                  else
-                                      resetStateVariables();
+                                  finishReception();
                                   );
             FSMA_Event_Transition(Transmit-DATA,
                                   msg == endSIFS && getFrameReceivedBeforeSIFS()->getType() == ST_CTS,
                                   WAITACK,
                                   sendDataFrameOnEndSIFS(getCurrentTransmission());
+                                  oldcurrentAC = currentAC;
                                  );
             FSMA_Event_Transition(Transmit-ACK,
                                   msg == endSIFS && isDataOrMgmtFrame(getFrameReceivedBeforeSIFS()),
                                   IDLE,
                                   sendACKFrameOnEndSIFS();
-                                  if (fixFSM)
-                                      finishReception();
-                                  else
-                                      resetStateVariables();
+                                  finishReception();
                                    );
         }
         // this is not a real state
@@ -1388,20 +1373,14 @@ void Ieee80211NewMac::handleWithFSM(cMessage *msg)
                                      IDLE,
                                      EV << "received frame contains bit errors or collision, next wait period is EIFS\n";
                                      numCollision++;
-                                     if (fixFSM)
-                                         finishReception();
-                                     else
-                                         resetStateVariables();
+                                     finishReception();
                                      );
             FSMA_No_Event_Transition(Immediate-Receive-Multicast,
                                      isLowerMsg(msg) && isMulticast(frame) && !isSentByUs(frame) && isDataOrMgmtFrame(frame),
                                      IDLE,
                                      sendUp(frame);
                                      numReceivedMulticast++;
-                                     if (fixFSM)
-                                         finishReception();
-                                     else
-                                         resetStateVariables();
+                                     finishReception();
                                      );
             FSMA_No_Event_Transition(Immediate-Receive-Data,
                                      isLowerMsg(msg) && isForUs(frame) && isDataOrMgmtFrame(frame),
@@ -1417,24 +1396,17 @@ void Ieee80211NewMac::handleWithFSM(cMessage *msg)
                                      isLowerMsg(msg) && isBackoffPending(), //(backoff[0] || backoff[1] || backoff[2] || backoff[3]),
                                      DEFER,
                                     );
-
             FSMA_No_Event_Transition(Immediate-Promiscuous-Data,
                                      isLowerMsg(msg) && !isForUs(frame) && isDataOrMgmtFrame(frame),
                                      IDLE,
                                      nb->fireChangeNotification(NF_LINK_PROMISCUOUS, frame);
-                                     if (fixFSM)
-                                         finishReception();
-                                     else
-                                         resetStateVariables();
+                                     finishReception();
                                      numReceivedOther++;
                                      );
             FSMA_No_Event_Transition(Immediate-Receive-Other,
                                      isLowerMsg(msg),
                                      IDLE,
-                                     if (fixFSM)
-                                         finishReception();
-                                     else
-                                         resetStateVariables();
+                                     finishReception();
                                      numReceivedOther++;
                                      );
         }
@@ -1757,7 +1729,7 @@ void Ieee80211NewMac::generateBackoffPeriod()
 void Ieee80211NewMac::decreaseBackoffPeriod()
 {
     // see spec 9.9.1.5
-    // decrase for every EDCAF
+    // decrease for every EDCAF
     // cancel event endBackoff after decrease or we don't know which endBackoff is scheduled
     for (int i = 0; i<numCategories(); i++)
     {
@@ -2002,6 +1974,7 @@ void Ieee80211NewMac::giveUpCurrentTransmission()
     nb->fireChangeNotification(NF_LINK_BREAK, temp);
     popTransmissionQueue();
     resetStateVariables();
+
     numGivenUp()++;
 }
 

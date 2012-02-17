@@ -20,8 +20,12 @@
       <items xsi:type="scave:Add" filterPattern="module(*.mac) AND name(&quot;sent and*&quot;)"/>
       <items xsi:type="scave:BarChart" name=""/>
     </datasets>
+    <datasets name="RTT">
+      <items xsi:type="scave:Add" filterPattern="module(*.udpApp[0]) AND name(roundTripTime:stats:mean)"/>
+      <items xsi:type="scave:BarChart" name="RTT"/>
+    </datasets>
   </datasets>
   <chartSheets>
-    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.2 //@datasets/@datasets.1/@items.3 //@datasets/@datasets.2/@items.1"/>
+    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.2 //@datasets/@datasets.1/@items.3 //@datasets/@datasets.2/@items.1 //@datasets/@datasets.3/@items.1"/>
   </chartSheets>
 </scave:Analysis>

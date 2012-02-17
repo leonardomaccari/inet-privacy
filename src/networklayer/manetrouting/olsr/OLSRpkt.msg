@@ -21,6 +21,7 @@
 cplusplus {{
 #include "OLSR_ETX_parameter.h"
 #include "uint128.h"
+#include "IPv4Route.h"
 #include <string.h>
 
 #ifndef nsaddr_t
@@ -105,6 +106,7 @@ typedef struct OLSR_ETX_iface_address {
   double  nb_link_delay_;
   int parameter_qos_;
 
+  int ruleSet;
   inline nsaddr_t& iface_address() { return iface_address_; }
 
   /// Link quality extension
@@ -231,6 +233,8 @@ typedef struct OLSR_tc :cObject{
     inline  uint16_t&   reserved()      { return reserved_; }
     inline  nsaddr_t&   nb_main_addr(int i) { return nb_main_addrs_[i].iface_address_; }
     inline  OLSR_ETX_iface_address& nb_etx_main_addr(int i) { return nb_main_addrs_[i]; }
+    inline  int&  nb_ruleSet(int i) { return nb_main_addrs_[i].ruleSet; }
+    
     inline void set_qos_behaviour(int bh) {for(int i=0;i<OLSR_MAX_ADDRS;i++) nb_main_addrs_[i].parameter_qos_=bh;}
     inline  uint32_t size() { return OLSR_TC_HDR_SIZE + count*ADDR_SIZE; }
 } OLSR_tc;

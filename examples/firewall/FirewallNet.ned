@@ -22,7 +22,8 @@ package inet.examples.firewall;
 import inet.networklayer.autorouting.ipv4.FlatNetworkConfigurator;
 import inet.nodes.inet.AdhocHost;
 import inet.world.radio.ChannelControl;
-import inet.world.scenario.Area;
+import inet.world.obstacles.ObstacleControl;
+import inet.world.annotations.AnnotationManager;
 
 
 network FirewallMeshNet
@@ -32,23 +33,24 @@ network FirewallMeshNet
         int numMeshNodes = default(0);
         int gridHorizSize = default(0);
         int numAreas = default(0);
+        bool placeMeshNodes = default(true);
+        //@display("bgi=maps/povo600");        
     submodules:
         host[numHosts]: AdhocHost {
             parameters:
-                @display("r=,,#707070;p=250,58");
+                @display("p=250,58");
                 udpApp[*].routingTableRelativePath = "routingTable"; //  .
         }
         meshNode[numMeshNodes]: AdhocHost {
             parameters:
-                @display("r=,,#707070;p=350,58");
-                mobilityType = "StaticGridMobility";
-                mobility.horizontalSide = gridHorizSize;
-                mobility.marginX = 200m;
-				mobility.marginY = 200m;
+                @display("i=device/accesspoint");
+                @display("p=350,58");
+                mobilityType = placeMeshNodes ? "StaticGridMobility" : "StationaryMobility" ; 
+                mobility.horizontalSize = gridHorizSize;
+                mobility.marginX = default(75m);
+				mobility.marginY = default(75m);
 				mobility.numHosts = numMeshNodes;
 
-        }
-        area[numAreas]: Area {
         }
         channelControl: ChannelControl {
             parameters:
@@ -57,5 +59,10 @@ network FirewallMeshNet
         configurator: FlatNetworkConfigurator {
             @display("p=140,50");
         }
+        obstacles: ObstacleControl {
+            @display("p=200,50");
+        } 
+        annotations: AnnotationManager { }
+
 }
 

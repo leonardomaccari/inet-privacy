@@ -35,6 +35,19 @@ struct MulticastRoute
 typedef std::vector<MulticastRoute> MulticastRoutes;
 
 
+/* chain names, GLOBAL is a dummy chain, it is intended to add there rules that
+ * all the nodes know, and it is used only to measure performance of the
+ * distributed firewall, not to filter.
+ */
+typedef enum CHAIN {
+	INPUT = 0,
+	OUTPUT = 1,
+	FORWARD = 2,
+	POSTROUTING = 3,
+	GLOBAL = 4
+} CHAIN;
+
+
 /**
  * A C++ interface to abstract the functionality of IRoutingTable.
  * Referring to IRoutingTable via this interface makes it possible to
@@ -178,7 +191,7 @@ class INET_API IRoutingTable
     /**
      * Return a set of valid routes with metric
      */
-    virtual std::map<IPv4Address, int> gatherRoutes() const = 0;
+    virtual std::map<IPv4Address, int> gatherRoutes(IPv4Address) const = 0;
 
     //@}
    // Dsdv time to live test entry
@@ -189,7 +202,7 @@ class INET_API IRoutingTable
 
 
     // Rules (similar to linux iptables)
-    virtual void addRule(bool output, IPv4RouteRule *entry) = 0;
+    virtual void addRule(CHAIN chain, IPv4RouteRule *entry) = 0;
     virtual void delRule(IPv4RouteRule *entry) = 0;
 
     /**
@@ -202,16 +215,22 @@ class INET_API IRoutingTable
     virtual void delStoredRuleSet(uint8_t rulesetCode) = 0;
 
     // enforce a specific ruleset
-    virtual void enforceRuleSet(bool output, int rSet) = 0;
+    virtual void enforceRuleSet(CHAIN chain, int rSet) = 0;
     virtual void refreshRuleset() = 0;
+    // filtering specific stuff
+    virtual void incrementGlobalSent() = 0;
+    virtual void incrementGlobalReceived() = 0;
 
-
-    virtual const IPv4RouteRule * getRule(bool output, int index) const = 0;
-    virtual int getNumRules(bool output) = 0;
-    virtual IPv4RouteRule * findRule(bool output, int prot, int sPort,
+    virtual const IPv4RouteRule * getRule(CHAIN chain, int index) const = 0;
+    virtual int getNumRules(CHAIN chain) = 0;
+    virtual IPv4RouteRule * findRule(CHAIN chain, int prot, int sPort,
                                      const IPv4Address &srcAddr, int dPort,
                                      const IPv4Address &destAddr, const InterfaceEntry *,
-                                     int ttl, bool activeOnly) = 0; // const removed, needed for statistics
+                                     int ttl, bool activeOnly, double& pos) = 0; // const removed, needed for statistics
+    virtual IPv4RouteRule * findRule(CHAIN chain, int prot, int sPort,
+                                      const IPv4Address &srcAddr, int dPort,
+                                      const IPv4Address &destAddr, const InterfaceEntry *,
+                                      int ttl, bool activeOnly) = 0; // const removed, needed for statistics
 
 };
 

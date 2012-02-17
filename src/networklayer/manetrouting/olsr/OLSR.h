@@ -44,9 +44,10 @@
 #include <assert.h>
 
 
+#define RULESET_CODE 0xFF
 
 
-/********** Useful macros **********/
+#define PRINT_ADDR(X)  IPv4Address(X.toUint()) << " "
 
 /// Returns maximum of two numbers.
 #ifndef MAX
@@ -397,6 +398,8 @@ class OLSR : public ManetRoutingBase
     /// Advertised Neighbor Set sequence number.
     uint16_t    ansn_;
 
+    uint8_t ruleSet;
+
     /// HELLO messages' emission interval.
     int     hello_ival_;
     /// TC messages' emission interval.
@@ -414,6 +417,7 @@ class OLSR : public ManetRoutingBase
     /// Address of the routing agent.
     nsaddr_t ra_addr_;
 
+    double OLSR_NEIGHB_HOLD_TIME_v;
   protected:
 // Omnet INET vaiables and functions
     char nodeName[50];
@@ -530,6 +534,8 @@ class OLSR : public ManetRoutingBase
     static double       emf_to_seconds(uint8_t);
     static uint8_t      seconds_to_emf(double);
     static int      node_id(const nsaddr_t&);
+    int MPR;
+    int isMpr(){return state_ptr->mprselset().size();};
 
     // Routing information access
     virtual uint32_t getRoute(const Uint128 &, std::vector<Uint128> &);

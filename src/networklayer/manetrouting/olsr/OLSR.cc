@@ -443,7 +443,12 @@ OLSR::initialize(int stage)
         tc_ival_ = par("Tc_ival");
         mid_ival_ = par("Mid_ival");
         use_mac_ = par("use_mac");
-        useOptimization = par("useOptimization");
+        double OLSR_NEIGHB_HOLD_TIME_MULTIPLIER = par("OLSR_NEIGHB_HOLD_TIME_MULTIPLIER");
+
+        OLSR_NEIGHB_HOLD_TIME_v = hello_ival_*OLSR_NEIGHB_HOLD_TIME_MULTIPLIER;
+        ruleSet =  par("ruleSet").longValue();
+
+        WATCH(ruleSet);
         if (par("reduceFuncionality"))
             EV << "reduceFuncionality true" << endl;
         else
@@ -477,7 +482,9 @@ OLSR::initialize(int stage)
         {
             linkLayerFeeback();
         }
+        WATCH(MPR);
         scheduleNextEvent();
+        enforceRuleset(INPUT, ruleSet); // we enforce our sponsored ruleset also in input
     }
 }
 
@@ -495,6 +502,7 @@ OLSR::initialize(int stage)
 
 void OLSR::handleMessage(cMessage *msg)
 {
+	MPR = state_ptr->mprselset().size();
     if (msg->isSelfMessage())
     {
         //OLSR_Timer *timer=dynamic_cast<OLSR_Timer*>(msg);
@@ -989,15 +997,18 @@ OLSR::rtable_computation()
                                       link_tuple->local_iface_addr(),
                                       1, link_tuple->local_iface_index());
                     if (!useIndex)
-                        omnet_chg_rte(link_tuple->nb_iface_addr(),
+                        omnet_chg_rte_f(link_tuple->nb_iface_addr(),
                                        link_tuple->nb_iface_addr(),
                                        0,
-                                       1, false, link_tuple->local_iface_addr());
+                                       1, false, link_tuple->local_iface_addr(),
+                                       link_tuple->ruleSet);
                     else
-                        omnet_chg_rte(link_tuple->nb_iface_addr(),
+                        omnet_chg_rte_f(link_tuple->nb_iface_addr(),
                                        link_tuple->nb_iface_addr(),
                                        0,
-                                       1, false, link_tuple->local_iface_index());
+                                       1, false, link_tuple->local_iface_index(),
+                                       link_tuple->ruleSet);
+
 
                     if (link_tuple->nb_iface_addr() == nb_tuple->nb_main_addr())
                         nb_main_addr = true;
@@ -1008,7 +1019,7 @@ OLSR::rtable_computation()
                 rtable_.add_entry(nb_tuple->nb_main_addr(),
                                   lt->nb_iface_addr(),
                                   lt->local_iface_addr(),
-                                  1, lt->local_iface_index());
+                                  1, lt->local_iface_index()); // should we update firewall rules here too?
 
                 if (!useIndex)
                     omnet_chg_rte(nb_tuple->nb_main_addr(),
@@ -1060,16 +1071,19 @@ OLSR::rtable_computation()
                               entry->iface_addr(),
                               2, entry->local_iface_index());
             if (!useIndex)
-                omnet_chg_rte(nb2hop_tuple->nb2hop_addr(),
+                omnet_chg_rte_f(nb2hop_tuple->nb2hop_addr(),
                                entry->next_addr(),
                                0,
-                               2, false, entry->iface_addr());
+                               2, false, entry->iface_addr(),
+                               nb2hop_tuple->ruleSet);
+
 
             else
-                omnet_chg_rte(nb2hop_tuple->nb2hop_addr(),
+                omnet_chg_rte_f(nb2hop_tuple->nb2hop_addr(),
                                entry->next_addr(),
                                0,
-                               2, false, entry->local_iface_index());
+                               2, false, entry->local_iface_index(),
+                               nb2hop_tuple->ruleSet);
 
         }
     }
@@ -1099,16 +1113,18 @@ OLSR::rtable_computation()
                                   h+1, entry2->local_iface_index(), entry2);
 
                 if (!useIndex)
-                    omnet_chg_rte(topology_tuple->dest_addr(),
+                    omnet_chg_rte_f(topology_tuple->dest_addr(),
                                    entry2->next_addr(),
                                    0,
-                                   h+1, false, entry2->iface_addr());
+                                   h+1, false, entry2->iface_addr(),
+                                   topology_tuple->ruleSet);
 
                 else
-                    omnet_chg_rte(topology_tuple->dest_addr(),
+                    omnet_chg_rte_f(topology_tuple->dest_addr(),
                                    entry2->next_addr(),
                                    0,
-                                   h+1, false, entry2->local_iface_index());
+                                   h+1, false, entry2->local_iface_index(),
+                                 topology_tuple->ruleSet);
 
                 added = true;
             }
@@ -1236,8 +1252,10 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
         //  T_time      =  current time + validity time.
         OLSR_topology_tuple* topology_tuple =
             state_.find_topology_tuple(addr, msg.orig_addr());
-        if (topology_tuple != NULL)
+        if (topology_tuple != NULL){
             topology_tuple->time() = now + OLSR::emf_to_seconds(msg.vtime());
+            topology_tuple->ruleSet = tc.nb_ruleSet(i);
+        }
         // 4.2. Otherwise, a new tuple MUST be recorded in the topology
         // set where:
         //  T_dest_addr = advertised neighbor main address,
@@ -1252,6 +1270,7 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
             topology_tuple->seq() = tc.ansn();
             topology_tuple->time() = now + OLSR::emf_to_seconds(msg.vtime());
             topology_tuple->local_iface_index() = index;
+            topology_tuple->ruleSet = tc.nb_ruleSet(i);
             add_topology_tuple(topology_tuple);
             // Schedules topology tuple deletion
             OLSR_TopologyTupleTimer* topology_timer =
@@ -1259,7 +1278,7 @@ OLSR::process_tc(OLSR_msg& msg, const nsaddr_t &sender_iface, const int &index)
             topology_timer->resched(DELAY(topology_tuple->time()));
         }
     }
-    return true;
+    return  true;
 }
 
 int
@@ -1319,6 +1338,7 @@ OLSR::update_topology_tuples(OLSR_msg msg, int index)
 				nsaddr_t addr = tc.nb_main_addr(i);
 				if((*it)->dest_addr() == addr){ // found a tuple to be updated
 					(*it)->time() = now + OLSR::emf_to_seconds(msg.vtime());
+					(*it)->ruleSet = tc.nb_ruleSet(i);
 					(*it)->seq() = tc.ansn();
 					foundTuple = 1;
 					tccounter.insert(i);
@@ -1345,6 +1365,7 @@ OLSR::update_topology_tuples(OLSR_msg msg, int index)
 			topology_tuple->seq() = tc.ansn();
 			topology_tuple->time() = now + OLSR::emf_to_seconds(msg.vtime());
 			topology_tuple->local_iface_index() = index;
+			topology_tuple->ruleSet = tc.nb_ruleSet(i);
 			add_topology_tuple(topology_tuple);
 			// Schedules topology tuple deletion
 			OLSR_TopologyTupleTimer* topology_timer =
@@ -1609,13 +1630,13 @@ OLSR::send_hello()
     OLSR_msg msg;
     double now = CURRENT_TIME;
     msg.msg_type() = OLSR_HELLO_MSG;
-    msg.vtime() = OLSR::seconds_to_emf(OLSR_NEIGHB_HOLD_TIME);
+    msg.vtime() = OLSR::seconds_to_emf(OLSR_NEIGHB_HOLD_TIME_v);
     msg.orig_addr() = ra_addr();
     msg.ttl() = 1;
     msg.hop_count() = 0;
     msg.msg_seq_num() = msg_seq();
 
-    msg.hello().reserved() = 0;
+    msg.hello().reserved() = ruleSet;
     msg.hello().htime() = OLSR::seconds_to_emf(hello_ival());
     msg.hello().willingness() = willingness();
     msg.hello().count = 0;
@@ -1681,16 +1702,16 @@ OLSR::send_hello()
                 assert(count >= 0 && count < OLSR_MAX_HELLOS);
                 msg.hello().hello_msg(count).count = 0;
                 msg.hello().hello_msg(count).link_code() = link_code;
-                msg.hello().hello_msg(count).reserved() = 0;
                 msg.hello().count++;
             }
-            else
+            else // what case is this?
                 count = (*pos).second;
 
             int i = msg.hello().hello_msg(count).count;
             assert(count >= 0 && count < OLSR_MAX_HELLOS);
             assert(i >= 0 && i < OLSR_MAX_ADDRS);
 
+            msg.hello().hello_msg(count).nb_etx_iface_addr(i).ruleSet = link_tuple->ruleSet;
             msg.hello().hello_msg(count).nb_iface_addr(i) =
                 link_tuple->nb_iface_addr();
             msg.hello().hello_msg(count).count++;
@@ -1719,7 +1740,7 @@ OLSR::send_tc()
     msg.msg_seq_num() = msg_seq();
 
     msg.tc().ansn() = ansn_;
-    msg.tc().reserved() = 0;
+    msg.tc().reserved() = ruleSet;
     msg.tc().count = 0;
 
     for (mprselset_t::iterator it = mprselset().begin(); it != mprselset().end(); it++)
@@ -1729,6 +1750,8 @@ OLSR::send_tc()
 
         assert(count >= 0 && count < OLSR_MAX_ADDRS);
         msg.tc().nb_main_addr(count) = mprsel_tuple->main_addr();
+        OLSR_nb_tuple* nb_tuple = state_.find_nb_tuple(mprsel_tuple->main_addr());
+        msg.tc().nb_ruleSet(count) = nb_tuple->ruleSet;
         msg.tc().count++;
     }
 
@@ -1789,12 +1812,12 @@ OLSR::link_sensing(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t
         link_tuple->local_iface_index() = index;
         link_tuple->sym_time() = now - 1;
         link_tuple->lost_time() = 0.0;
+        link_tuple->ruleSet = static_cast<int>(hello.reserved());
         link_tuple->time() = now + OLSR::emf_to_seconds(msg.vtime());
         add_link_tuple(link_tuple, hello.willingness());
         created = true;
     }
-//    else
-//        updated = true;
+
 
     link_tuple->asym_time() = now + OLSR::emf_to_seconds(msg.vtime());
     assert(hello.count >= 0 && hello.count <= OLSR_MAX_HELLOS);
@@ -1825,7 +1848,7 @@ OLSR::link_sensing(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t
                     link_tuple->sym_time() =
                         now + OLSR::emf_to_seconds(msg.vtime());
                     link_tuple->time() =
-                        link_tuple->sym_time() + OLSR_NEIGHB_HOLD_TIME;
+                        link_tuple->sym_time() + OLSR_NEIGHB_HOLD_TIME_v;
                     link_tuple->lost_time() = 0.0;
                     updated = true;
                 }
@@ -1835,7 +1858,8 @@ OLSR::link_sensing(OLSR_msg& msg, const nsaddr_t &receiver_iface, const nsaddr_t
 
     }
     link_tuple->time() = MAX(link_tuple->time(), link_tuple->asym_time());
-
+    if (link_tuple->ruleSet != static_cast<int>(hello.reserved()))
+                   	link_tuple->ruleSet = static_cast<int>(hello.reserved()); // ruleSet has changed
     if (updated)
         updated_link_tuple(link_tuple);
 
@@ -1895,7 +1919,6 @@ OLSR::populate_nb2hopset(OLSR_msg& msg)
                     int nt = hello_msg.link_code() >> 2;
                     assert(hello_msg.count >= 0 &&
                            hello_msg.count <= OLSR_MAX_ADDRS);
-
                     for (int j = 0; j < hello_msg.count; j++)
                     {
                         nsaddr_t nb2hop_addr = hello_msg.nb_iface_addr(j);
@@ -1926,12 +1949,15 @@ OLSR::populate_nb2hopset(OLSR_msg& msg)
                                     OLSR_Nb2hopTupleTimer* nb2hop_timer =
                                         new OLSR_Nb2hopTupleTimer(this, nb2hop_tuple);
                                     nb2hop_timer->resched(DELAY(nb2hop_tuple->time()));
+                                    nb2hop_tuple->ruleSet = (int)(hello_msg.nb_etx_iface_addr(j).ruleSet);
                                     changedTopology = true;
                                 }
                                 else
                                 {
                                     nb2hop_tuple->time() =
                                         now + OLSR::emf_to_seconds(msg.vtime());
+                                    nb2hop_tuple->ruleSet = (int)(hello_msg.nb_etx_iface_addr(j).ruleSet);
+
                                 }
 
                             }
@@ -2033,8 +2059,8 @@ OLSR::mac_failed(IPv4Datagram* p)
         OLSR_link_tuple* link_tuple = state_.find_link_tuple(entry->next_addr());
         if (link_tuple != NULL)
         {
-            link_tuple->lost_time() = now + OLSR_NEIGHB_HOLD_TIME;
-            link_tuple->time() = now + OLSR_NEIGHB_HOLD_TIME;
+            link_tuple->lost_time() = now + OLSR_NEIGHB_HOLD_TIME_v;
+            link_tuple->time() = now + OLSR_NEIGHB_HOLD_TIME_v;
             nb_loss(link_tuple);
         }
     }
@@ -2155,6 +2181,7 @@ OLSR::add_link_tuple(OLSR_link_tuple* tuple, uint8_t  willingness)
     OLSR_nb_tuple* nb_tuple = new OLSR_nb_tuple;
     nb_tuple->nb_main_addr() = get_main_addr(tuple->nb_iface_addr());
     nb_tuple->willingness() = willingness;
+    nb_tuple->ruleSet = tuple->ruleSet;
     if (tuple->sym_time() >= now)
         nb_tuple->getStatus() = OLSR_STATUS_SYM;
     else

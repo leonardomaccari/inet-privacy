@@ -43,13 +43,22 @@ simsignal_t RoutingTable::ruleSetDistribution = SIMSIGNAL_NULL;
 simsignal_t RoutingTable::inputRulesMatch = SIMSIGNAL_NULL;
 simsignal_t RoutingTable::outputRulesMatch = SIMSIGNAL_NULL;
 simsignal_t RoutingTable::outputRulesMiss= SIMSIGNAL_NULL;
+simsignal_t RoutingTable::forwardRulesMiss= SIMSIGNAL_NULL;
+simsignal_t RoutingTable::forwardRulesMatch= SIMSIGNAL_NULL;
+simsignal_t RoutingTable::postRoutingMiss= SIMSIGNAL_NULL;
+simsignal_t RoutingTable::postRoutingMatch= SIMSIGNAL_NULL;
 
-int RoutingTable::inputMissed;
 int RoutingTable::inputMatched;
+int RoutingTable::forwardMissed;
+int RoutingTable::forwardMatched;
 int RoutingTable::outputMissed;
 int RoutingTable::outputMatched;
+int RoutingTable::globalSent;
+int RoutingTable::globalReceived;
+int RoutingTable::postRoutingMatched;
+int RoutingTable::postRoutingMissed;
 int RoutingTable::toBeFiltered;
-
+int RoutingTable::numLogged;
 
 Define_Module(RoutingTable);
 
@@ -111,25 +120,40 @@ void RoutingTable::initialize(int stage)
         nb->subscribe(this, NF_INTERFACE_STATE_CHANGED);
         nb->subscribe(this, NF_INTERFACE_CONFIG_CHANGED);
         nb->subscribe(this, NF_INTERFACE_IPv4CONFIG_CHANGED);
-        inputMissed = 0;
         inputMatched = 0;
         outputMatched = 0;
         outputMissed = 0;
+        forwardMissed = 0;
+        forwardMatched = 0;
+        globalSent = 0;
+        globalReceived = 0;
+        postRoutingMatched = 0;
+        postRoutingMissed = 0;
         toBeFiltered = 0;
+        numLogged = 0;
         routeChanged = false;
         rSetSize.setName("Enforced ruleset size");
         strategy = firewallStrategy::getStrategy(par("firewallStrategy"), routes, outputRules);
         strategy->setMaxSize(par("firewallRuleSetSize"));
         strategy->routingTable = this;
         strategy->setMPRThreshold(par("firewallMPRThreshold"));
+        perf = strategy->stringToPerf(par("nodePerformance").stdstringValue());
+        perfArray = par("perfArray").xmlValue();
+        strategy->fillPerfMap(perfArray, par("nodePerformance").stdstringValue());
+        cacheHit = 0;
+        cacheMiss = 0;
 
         WATCH_PTRVECTOR(routes);
         WATCH_PTRVECTOR(multicastRoutes);
         WATCH_PTRVECTOR(outputRules);
         WATCH_PTRVECTOR(inputRules);
+        WATCH_PTRVECTOR(forwardRules);
+        WATCH_PTRVECTOR(globalRules);
+        WATCH_PTRVECTOR(postRoutingRules);
 
         WATCH(IPForward);
         WATCH(routerId);
+        WATCH(globalReceived);
         routingTableSize = registerSignal("routingTableSize");
         firewallTableSize = registerSignal("firewallTableSize");
         hopCount= registerSignal("hopCount");
@@ -137,6 +161,8 @@ void RoutingTable::initialize(int stage)
         inputRulesMatch = registerSignal("inputRulesMatch");
         outputRulesMatch = registerSignal("outputRulesMatch");
         outputRulesMiss = registerSignal("outputRulesMiss");
+        postRoutingMatch = registerSignal("postRoutingRulesMatch");
+        postRoutingMiss = registerSignal("postRoutingRulesMiss");
 
     }
     else if (stage==1)
@@ -174,7 +200,7 @@ void RoutingTable::initialize(int stage)
         updateNetmaskRoutes();
         const char *filename = par("firewallFile");
         double probFirewallOn = par("probFirewallOn");
-        if (uniform(0,1)> probFirewallOn)
+        if (uniform(0,1) > probFirewallOn)
         	firewallOn = false;
         else
         	firewallOn = true;
@@ -355,12 +381,18 @@ std::vector<IPv4Address> RoutingTable::gatherAddresses() const
 }
 
 
-std::map<IPv4Address, int> RoutingTable::gatherRoutes() const
+std::map<IPv4Address, int> RoutingTable::gatherRoutes(IPv4Address myAddr) const
 {
 
 	std::map<IPv4Address,int> targetSet;
 	for (RouteVector::const_iterator i=routes.begin(); i!=routes.end(); ++i){
-		if((*i)->getType() != IPv4Route::DIRECT && !(*i)->getHost().isUnspecified()){
+
+		// get a list of unique reachable addresses that are not local and are
+		// not the one specified as a parameter (sometimes, manet routing creates
+		// loops, so that in the routing table there is a route to this node that
+		// is not DIRECT).
+		if((*i)->getType() != IPv4Route::DIRECT && !(*i)->getHost().isUnspecified()
+				&& (!myAddr.isUnspecified() && myAddr != (*i)->getHost() )){
 			std::map<IPv4Address,int>::iterator jj = targetSet.find((*i)->getHost());
 			if(jj == targetSet.end() || (jj->second > (*i)->getMetric()))
 				targetSet[(*i)->getHost()] = (*i)->getMetric();
@@ -662,6 +694,8 @@ void RoutingTable::addRoute(const IPv4Route *entry)
     else
         multicastRoutes.push_back(const_cast<IPv4Route*>(entry));
 
+    if (firewallOn == false)
+    	return;
     RuleSetMap::iterator newSet = ruleMap.find(entry->getRuleSet());
     if (newSet == ruleMap.end() && entry->getRuleSet() != 0)
     	error("This node must use ruleset %d that it doesn't know", entry->getRuleSet());
@@ -670,7 +704,7 @@ void RoutingTable::addRoute(const IPv4Route *entry)
     		(*jj)->setDestAddress(entry->getHost());
     		(*jj)->setDestNetmask(entry->getNetmask());
     		(*jj)->hc = entry->getMetric();
-    		addRule(true, *jj); // rulesets add rules only in output
+    		addRule(POSTROUTING, *jj); // rulesets add rules only in postrouting
     	}
     }
 
@@ -691,7 +725,7 @@ bool RoutingTable::deleteRoute(const IPv4Route *entry)
     {
         nb->fireChangeNotification(NF_IPv4_ROUTE_DELETED, entry); // rather: going to be deleted
         routes.erase(i);
-        delRule(true, entry->getHost()); // delete all associated rules
+        delRule(POSTROUTING, entry->getHost()); // delete all associated rules
         delete entry;
         invalidateCache();
         updateDisplayString();
@@ -760,11 +794,11 @@ void RoutingTable::updateNetmaskRoutes()
 
 
 
-void RoutingTable::addRule(bool output, IPv4RouteRule *entry)
+void RoutingTable::addRule(CHAIN chain, IPv4RouteRule *entry)
 {
 // first, find the rule if exist
 	IPv4RouteRule * rule;
-    if((rule = findRule(output, entry->getProtocol(), entry->getSrcPort(),
+    if((rule = findRule(chain, entry->getProtocol(), entry->getSrcPort(),
     		entry->getSrcAddress(), entry->getDestPort(),
     		entry->getDestAddress(), entry->getInterface(), 0, false)) != 0){
     	(rule)->activate();
@@ -784,16 +818,24 @@ void RoutingTable::addRule(bool output, IPv4RouteRule *entry)
     for (int i=0; i < HITQUEUE_SIZE; i++)
         	newRule->hitQueue.push_back(0);
 
-    if (output)
-    {
+    if (chain == OUTPUT)
         outputRules.push_back(newRule);
-    }
-    else
-    {
+    else if (chain == INPUT)
         inputRules.push_back(newRule);
-    }
-
+    else if (chain == POSTROUTING)
+        postRoutingRules.push_back(newRule);
+    else if (chain == FORWARD)
+         forwardRules.push_back(newRule);
+    else if (chain == GLOBAL)
+         globalRules.push_back(newRule);
+    else
+    	opp_error("Unknown chain chosen");
 }
+
+
+// rules are never really deleted, we deactivate them. This is
+// not really the case of a generic firewall, it is needed
+// for simulations in manet case
 
 void RoutingTable::delRule(IPv4RouteRule *entry)
 {
@@ -802,44 +844,56 @@ void RoutingTable::delRule(IPv4RouteRule *entry)
 		{
 			entry->deactivate();
 			// do not unenforce(), if the rule is put back it must be running, only firewallingStrategy changes enforcement
-
-			//delete entry;
-			//outputRules.erase(outputRules.begin()+i);
-			break;
+			return;
 		}
 	for (unsigned int i=0; i<inputRules.size(); i++)
 		if (inputRules[i] == entry)
 		{
 			entry->deactivate();
-			//delete entry;
-			//inputRules.erase(inputRules.begin()+i);
-			break;
+			return;
+		}
+	for (unsigned int i=0; i<forwardRules.size(); i++)
+		if (forwardRules[i] == entry)
+		{
+			entry->deactivate();
+			return;
 		}
 }
-void RoutingTable::delRule(bool output, IPv4Address destAddress)
+void RoutingTable::delRule(CHAIN chain, IPv4Address destAddress)
 {
 	if (destAddress.isUnspecified())
 		return;
-	if(output)
+	if(chain == OUTPUT)
 	{
 		for (unsigned int i=0; i<outputRules.size(); i++)
 			if (outputRules[i]->getDestAddress() == destAddress)
 			{
 				outputRules[i]->deactivate();
-
-				//delete entry;
-				//outputRules.erase(outputRules.begin()+i);
 				break;
 			}
-	} else {
+	} else if (chain == INPUT ){
 		for (unsigned int i=0; i<inputRules.size(); i++)
 			if (inputRules[i]->getDestAddress() == destAddress)
 			{
 				outputRules[i]->deactivate();
-				//delete entry;
-				//inputRules.erase(inputRules.begin()+i);
 				break;
 			}
+	} else if (chain == FORWARD){
+		for (unsigned int i=0; i<forwardRules.size(); i++)
+				if (forwardRules[i]->getDestAddress() == destAddress)
+				{
+					forwardRules[i]->deactivate();
+					break;
+				}
+	} else if (chain == POSTROUTING){
+			for (unsigned int i=0; i<postRoutingRules.size(); i++)
+					if (postRoutingRules[i]->getDestAddress() == destAddress)
+					{
+						postRoutingRules[i]->deactivate();
+						break;
+					}
+	} else if (chain == GLOBAL){
+		opp_error("Why are you trying to delete a global rule?");
 	}
 }
 
@@ -854,7 +908,7 @@ void RoutingTable::delStoredRuleSet(uint8_t rSet){
 	ruleMap.erase(rSet);
 }
 
-void RoutingTable::enforceRuleSet(bool output, int rSet){
+void RoutingTable::enforceRuleSet(CHAIN chain, int rSet){
 
 	if (ruleMap.find(rSet) == ruleMap.end() && rSet != 0)
 		error("Trying to enforce an unknown `%d' ruleset", rSet);
@@ -866,54 +920,111 @@ void RoutingTable::enforceRuleSet(bool output, int rSet){
 		newRule->activate();
 	    if(strncmp(par("firewallStrategy").stringValue(),"NONE",strlen("NONE")) == 0 )
 			newRule->enforce();
-		addRule(output,newRule);
+		addRule(chain,newRule);
 	}
 }
-const IPv4RouteRule * RoutingTable::getRule(bool output, int index) const
+const IPv4RouteRule * RoutingTable::getRule(CHAIN chain, int index) const
 {
-    if (output)
+    if (chain == OUTPUT)
     {
         if (index < (int)outputRules.size())
             return outputRules[index];
         else
             return NULL;
     }
-    else
+    else if( chain == INPUT)
     {
         if (index < (int)inputRules.size())
             return inputRules[index];
         else
             return NULL;
     }
+    else if( chain == FORWARD)
+    {
+        if (index < (int)forwardRules.size())
+            return forwardRules[index];
+        else
+            return NULL;
+    }
+    else if( chain == POSTROUTING)
+    {
+        if (index < (int)postRoutingRules.size())
+            return postRoutingRules[index];
+        else
+            return NULL;
+    }
+    else if( chain == GLOBAL)
+    {
+        if (index < (int)globalRules.size())
+            return globalRules[index];
+        else
+            return NULL;
+    }
+	opp_error("Inexistent chain selected");
+
 }
 
-int RoutingTable::getNumRules(bool output)
+int RoutingTable::getNumRules(CHAIN chain)
 {
-    if (output)
-        return outputRules.size();
-    else
-        return inputRules.size();
+	if (chain == OUTPUT)
+		return outputRules.size();
+	else if( chain == INPUT)
+		return inputRules.size();
+	else if( chain == FORWARD)
+		return forwardRules.size();
+	else if( chain == POSTROUTING)
+		return postRoutingRules.size();
+	else if( chain == GLOBAL)
+		return globalRules.size();
+	opp_error("Inexistent chain selected");
+	return -1; // stop bothering with warnings
 }
 
- IPv4RouteRule * RoutingTable::findRule(bool output, int prot,
+IPv4RouteRule * RoutingTable::findRule(CHAIN chain, int prot,
 		int sPort, const IPv4Address &srcAddr, int dPort,
 		const IPv4Address &destAddr, const InterfaceEntry *iface,
-		int ttl, bool activeOnly)
+		int ttl, bool activeOnly){
+	double dummy;
+	double & dummyref = dummy;
+	return findRule(chain, prot, sPort, srcAddr, dPort,
+			destAddr, iface,ttl, activeOnly, dummy);
+}
+
+ IPv4RouteRule * RoutingTable::findRule(CHAIN chain, int prot,
+		int sPort, const IPv4Address &srcAddr, int dPort,
+		const IPv4Address &destAddr, const InterfaceEntry *iface,
+		int ttl, bool activeOnly, double & delay)
 {
     std::vector<IPv4RouteRule *>::const_iterator it;
     std::vector<IPv4RouteRule *>::const_iterator endIt;
 
 
-    if (output)
+    int pos = 0;
+    if (chain == OUTPUT)
     {
         it = outputRules.begin();
         endIt = outputRules.end();
     }
-    else
+    else if (chain == INPUT)
     {
         it = inputRules.begin();
         endIt = inputRules.end();
     }
+    else if (chain == FORWARD)
+    {
+    	it = forwardRules.begin();
+    	endIt = forwardRules.end();
+    }
+    else if (chain == POSTROUTING)
+    {
+    	it = postRoutingRules.begin();
+    	endIt = postRoutingRules.end();
+    } else if (chain == GLOBAL)
+    {
+    	it = globalRules.begin();
+    	endIt = globalRules.end();
+    }
+
     while (it!=endIt)
     {
 
@@ -936,6 +1047,8 @@ int RoutingTable::getNumRules(bool output)
            if (!IPv4Address::maskedAddrAreEqual(srcAddr, e->getSrcAddress(), e->getSrcNetmask()))
            {
                it++;
+               if (e->getTarget() != IPv4RouteRule::LOG)
+            	   pos++;
                continue;
            }
        }
@@ -945,11 +1058,15 @@ int RoutingTable::getNumRules(bool output)
     		   if (!IPv4Address::maskedAddrAreEqual(destAddr, e->getDestAddress(), e->getDestNetmask()))
     		   {
     			   it++;
+    			   if (e->getTarget() != IPv4RouteRule::LOG)
+    				   pos++;
     			   continue;
     		   }
     	   }
     	   else if(e->getDestAddress() != destAddr) {
     			   it++;
+    			   if (e->getTarget() != IPv4RouteRule::LOG)
+    				   pos++;
     			   continue;
     	   }
 
@@ -957,78 +1074,115 @@ int RoutingTable::getNumRules(bool output)
        if ((prot!=IP_PROT_NONE) && (e->getProtocol()!=IP_PROT_NONE) && (prot!=e->getProtocol()))
        {
            it++;
+           if (e->getTarget() != IPv4RouteRule::LOG)
+             				   pos++;
            continue;
        }
        if ((sPort!=-1) && (e->getSrcPort()!=-1) && (sPort!=e->getSrcPort()))
        {
            it++;
+           if (e->getTarget() != IPv4RouteRule::LOG)
+             				   pos++;
            continue;
        }
        if ((dPort!=-1) && (e->getDestPort()!=-1) && (dPort!=e->getDestPort()))
        {
            it++;
+           if (e->getTarget() != IPv4RouteRule::LOG)
+             				   pos++;
            continue;
        }
        if ((iface!=NULL) && (e->getInterface()!=NULL) && (iface!=e->getInterface()))
        {
            it++;
+           if (e->getTarget() != IPv4RouteRule::LOG)
+             				   pos++;
            continue;
        }
-       if(output && activeOnly && !e->isEnforced()){
-    	   /*
-    	    * enforced rules are rules that the firewall strategy has chosen to
-    	    * be enforced now. A rule can be active&&(enforced||!enforced) or it can
-    	    * be non active. Only active rules can be enforced. If a rule is
-    	    * active and not enforced there is a miss logged.
-    	    *
-    	    * If firewall is off, we have the rules but we decide not to apply any,
-    	    * so its'always a miss.
-    	    */
+       // found valid src address, dest address src port and dest port
+
+       if (chain == GLOBAL) // global is dummy, just needed to make statistics of packets to be filtered
+    	   return e;
+       if (e->getTarget() == IPv4RouteRule::LOG){
+    	   numLogged++;
     	   it++;
-    	   if (output && firewallOn){ // if it is in output and firewall is on,
-    		   	   	   	   	   	   	  // rule is denforced, so we add to missed
-    		   outputMissed++;
-    		   this->emit(outputRulesMiss, 32-ttl);
-    		   if (ttl == 32)
-    			   toBeFiltered++;
-    	   }
-    	   e->hitQueue.back()++; // increase last second usage statistic
     	   continue;
        }
-       // found valid src address, dest address src port and dest port
-       if(ttl){ // needed only for statistics, overlaps with activeOnly
-    	   if (output && firewallOn){
-    		   outputMatched++;
-    		   this->emit(outputRulesMatch, 32-ttl);
-    		   if (ttl == 32)
-    			   toBeFiltered++;
-        	   e->hitQueue.back()++; // increase last second usage statistic
-    	   }
-    	   else if (output && !firewallOn){
-    		   outputMissed++;
-    		   this->emit(outputRulesMiss, 32-ttl);
-    		   if (ttl == 32)
-    			   toBeFiltered++;
-        	//   e->hitQueue.back()++; // do not increase last second usage statistic (firewall is off )
-    	   }
-    	   else if (!output){
-    		   inputMatched++;
-    		   this->emit(inputRulesMatch, 32-ttl);
+       if (!firewallOn){
+    	   delay = 0;
+    	   return 0;
+       }
+       if (activeOnly) // we want to filter and matched something (active/enforced or not), log
+    	   logFirewallStats(chain,  e,  ttl);
+       if (chain == POSTROUTING){ // only postrouting has dynamic firewalling (enforced/actived rules)
+    	   if(activeOnly){ // we are looking for active rules
+    		   if (!e->isEnforced()){
+    			   /*
+    			    * enforced rules are rules that the firewall strategy has chosen to
+    			    * be enforced now. A rule can be active&&(enforced/!enforced) or it can
+    			    * be non active. Only active rules can be enforced. If a rule is
+    			    * active and not enforced there is a miss logged.
+    			    * Non actived rules have no real application, they are rules that the
+    			    * node has never received, I need them to make statistics against a
+    			    * perfectly working firewall (a firewall that always receives all the rules) in case
+    			    * of distribution of partial rule-sets.
+    			    * the active/inactive state is meaningful only in postrouting chains that are dynamic.
+    			    *
+    			    * the routing protocol only inteferes with the POSTROUTING chain
+    			    */
+    			   it++;
+    			   continue; //matched but not enforced, keep looking
+    		   } else { // rule is enforced (so it must be active)
+    			   delay = strategy->getDelay(perf,pos);
+    			   return e;
+    		   }
+    	   } else{ /* we look for a rule not to filter, but to manage the rule-sets (add/delete)
+    	   	   	   	   so return the rule even if it may be unenforced
+    		    */
+    		   delay = 0;
+    		   return e;
     	   }
        }
+       if(chain == INPUT || chain == OUTPUT || chain == FORWARD){ // always filter traffic if we have rules
+    	   	   	   	   	   	   	   	   	     // since these chains are not dynamic (they are always active)
+    	   delay = strategy->getDelay(perf,pos);
+    	   return e;
+       }
 
-       if(!output) //always filter input traffic if we have rules
-    	   return e;
-       if(firewallOn) // firewall is on, return the corresponding rule
-    	   return e;
-       else if(!firewallOn && !activeOnly) //fw is off, but we look for a rule
-    	   	   	   	   	   	   	   	   	   //to add/delete, so return the rule
-    	   return e;
-       else
-    	   return NULL; // firewall is off and we look only for active rules
-       	   	   	   	    // (we are filtering), return off
+       opp_error("Should never arrive here"); // all chains should be already matched
     }
-    return NULL;
+    return 0;
+}
+
+void RoutingTable::logFirewallStats(CHAIN chain, IPv4RouteRule * e, int ttl)
+{
+	   if(ttl){ // needed only for statistics
+	    	   if (chain == POSTROUTING && e->isEnforced()){
+	    		   if (ttl == 32) // this packet has been generated by us.
+	    			   toBeFiltered++;
+	    		   postRoutingMatched++;
+	    		   cacheHit++;
+	    		   this->emit(postRoutingMatch, 32-ttl);
+	        	   e->hitQueue.back()++; // increase last second usage statistic
+	    	   }
+	    	   else if (chain == POSTROUTING && !e->isEnforced()){
+	    		   if (ttl == 32) // this packet has been generated by us.
+	    			   toBeFiltered++;
+	    		   postRoutingMissed++;
+	    		   cacheMiss++;
+	    		   this->emit(postRoutingMiss, 32-ttl);
+	        	   e->hitQueue.back()++; // increase last second usage statistic
+	    	   }
+	    	   else if (chain == OUTPUT) { // non postrouting chains are not dynamic, so toBeFiltered is not applied here
+	    		   outputMatched++;
+	    	   }  else if (chain == FORWARD) {
+	    		   forwardMatched++;
+	    	   }
+	    	   else if (chain == INPUT){
+	    		   inputMatched++;
+	    		   this->emit(inputRulesMatch, 32-ttl);
+	    	   } // no GLOBAL here, to keep findRule clean it is in IPv4.cc
+	       }
 }
 
 void RoutingTable::refreshRuleset(){
@@ -1040,11 +1194,45 @@ void RoutingTable::refreshRuleset(){
 }
 
 void RoutingTable::finish(){
-	double totalPackets = outputMatched+outputMissed;
-	recordScalar("outputMissedRatio", outputMissed/totalPackets);
-//	recordScalar("outputMatchedRatio", outputMatched/totalPackets);
-	recordScalar("outputMatchedGlobal", outputMatched);
+	double totalPostrouting = postRoutingMatched+postRoutingMissed;
 
+	if (totalPostrouting != 0)
+	// match/miss at a local filter scale.
+		recordScalar("Global PostRouting match ratio", postRoutingMatched/totalPostrouting);
+	else
+		recordScalar("Global PostRouting match ratio", -1);
+	// all the packets that matched a GLOBAL rule in output
+	recordScalar("Global chain output match", globalSent);
+	// all the packets that matched a GLOBAL rule in input
+	recordScalar("Global chain input match", globalReceived);
+	// all the packets that were sent by a node but that matched a disabled rule in the
+	// sender's postrouting chain. Works also without active/enabled rules
+	recordScalar("To be Filtered", toBeFiltered);
+	if (globalSent != 0)
+		recordScalar("Globals missed", (float)globalReceived/(float)globalSent);
+	else
+		recordScalar("Globals missed", -1);
+
+	recordScalar("numLogged", numLogged);
+
+	// this metric makes sense with generic rules of the kind ''iptables -A POSTROUTING -p udp --dport 8000'', without explicit destination if:
+	// you set in the non-dynamic rule-set the generic rules for the nodes that will apply filtering in POSTROUTING with target DROP
+	// set in the non-dynamic rule-set the generic rules for the nodes that will NOT apply filtering in POSTROUTING with target LOG
+	// the metric gives you the number of packets you were able to match
+	// against the total number of packets you should have matched
+
+	if (numLogged != 0 || postRoutingMatched != 0)
+		recordScalar("Logged rules match", (float)postRoutingMatched/(float)(numLogged+postRoutingMatched));
+	else
+		recordScalar("Logged rules match", -1);
+
+	if (0 != (cacheHit+cacheMiss))
+		recordScalar("Cache hit ratio", cacheHit/(cacheHit+cacheMiss));
+
+	// for this metric, every node should implement as GLOBAL every rule it exports to other and
+	// it is useful with deactivated rules
+	if (toBeFiltered!= 0)
+		recordScalar("Global ruleset missed packets", (float)globalReceived/(float)toBeFiltered);
 	//recordScalar("inputMatchedRatio", inputMatched/(double)toBeFiltered); // with this, I need to know the number of sent packets per run that should be filtered
-	recordScalar("inputMatchedGlobal", inputMatched); // with this I will compare inputmatch without firewall with inputmatch with more nodes filtering
+	//recordScalar("inputMatchedGlobal", inputMatched); // with this I will compare inputmatch without firewall with inputmatch with more nodes filtering
 }

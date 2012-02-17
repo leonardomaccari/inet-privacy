@@ -48,5 +48,7 @@ simple RandomWPMobility extends MovingMobilityBase
         bool initFromDisplayString = default(true);
         volatile double speed @unit(mps); // use uniform(minSpeed, maxSpeed) or another distribution
         volatile double waitTime @unit(s); // wait time between reaching a target and choosing a new one
+        bool obstacleAvoidance = default(false);
+        
         @class(RandomWPMobility);
 }

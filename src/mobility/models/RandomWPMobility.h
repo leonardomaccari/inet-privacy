@@ -36,7 +36,7 @@ class INET_API RandomWPMobility : public LineSegmentsMobilityBase
 {
   protected:
     bool nextMoveIsWait;
-
+    double walkedMeters;
   protected:
     /** @brief Initializes mobility model parameters.*/
     virtual void initialize(int stage);
@@ -46,7 +46,7 @@ class INET_API RandomWPMobility : public LineSegmentsMobilityBase
     
     /** @brief Overridden from LineSegmentsMobilityBase.*/
     virtual void move();
-
+    Coord getRandomPositionWithObstacles();
   public:
     RandomWPMobility();
 };

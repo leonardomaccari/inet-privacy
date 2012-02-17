@@ -1,5 +1,5 @@
 #include "MusolesiMobility.h"
-
+#include "sstream"
 /*
  * Test done: nodes 1..100, groups 10
  *  nodes 100, groups 1..100
@@ -44,9 +44,12 @@ void MusolesiMobility::initialize(int stage)
 
     EV << "initializing MusolesiMobility stage " << stage << endl;
     stationary = false; // this stuff is needed by LineSegmentsMobilityBase
-    LineSegmentsMobilityBase::initialize(stage);
+	obstacleAvoidance = par("obstacleAvoidance").boolValue();
+	LineSegmentsMobilityBase::initialize(stage, obstacleAvoidance);
+
     if (stage == 0)
     {
+
         minHostSpeed= par("minHostSpeed");
         updateInterval = par("updateInterval");
         maxHostSpeed = par("maxHostSpeed");
@@ -62,7 +65,7 @@ void MusolesiMobility::initialize(int stage)
         recordStatistics = par("recordStatistics");
         drift = par("drift");
         expmean = par("expmean");
-
+        myGroup = -1;
 
         constraintAreaMin.y = par("constraintAreaY");
         constraintAreaMax.x = par("constraintAreaSizeX");
@@ -118,7 +121,6 @@ void MusolesiMobility::initialize(int stage)
             for (int i = 0; i< numHosts; i++)
                 nodesInMyBlock[i].first = nodesInMyBlock[i].second = 0;
 
-//    } else if (stage == 1 ) {
 
         moveMessage = new cMessage("MusolesiHartbeat");
         scheduleAt(simTime() + 1, moveMessage); // do statistics, reshuffle, rewire...
@@ -128,6 +130,7 @@ void MusolesiMobility::initialize(int stage)
 
 
     }
+
 
 }
 
@@ -317,8 +320,7 @@ void MusolesiMobility::setTargetPosition()
     //Re-definition of the number of hosts in each cell
     cells[previousGoalCellX][previousGoalCellY].numberOfHosts-=1;
     cells[selectedGoalCellX][selectedGoalCellY].numberOfHosts+=1;
-    double newGoalRelativeX=uniform(0,sideLengthX);
-    double newGoalRelativeY=uniform(0,sideLengthY);						
+
     if (recordStatistics && (previousGoalCellX != selectedGoalCellX ||
     		previousGoalCellY != selectedGoalCellY) )
     {
@@ -328,9 +330,15 @@ void MusolesiMobility::setTargetPosition()
     hosts[nodeId].cellIdX=selectedGoalCellX;
     hosts[nodeId].cellIdY=selectedGoalCellY;
 
+    Coord randomPoint = getRandomPointWithObstacles(
+    		cells[selectedGoalCellX][selectedGoalCellY].minX,
+    		cells[selectedGoalCellX][selectedGoalCellY].minY);
 
-    hosts[nodeId].goalCurrentX=cells[selectedGoalCellX][selectedGoalCellY].minX+newGoalRelativeX;
-    hosts[nodeId].goalCurrentY=cells[selectedGoalCellX][selectedGoalCellY].minY+newGoalRelativeY;
+    //double newGoalRelativeX=uniform(0,sideLengthX);
+    //double newGoalRelativeY=uniform(0,sideLengthY);
+
+    hosts[nodeId].goalCurrentX=randomPoint.x;
+    hosts[nodeId].goalCurrentY=randomPoint.y;
 
     targetPosition.x =  hosts[nodeId].goalCurrentX;
     targetPosition.y =  hosts[nodeId].goalCurrentY;
@@ -360,8 +368,31 @@ void MusolesiMobility::fixIfHostGetsOutside()
 }
 
 void MusolesiMobility::handleMessage(cMessage * msg){
-    if (msg == moveMessage)
+    if (msg == moveMessage){
         handleSelfMsg(msg);
+        char buf[40];
+
+        double relXcolor = hosts[nodeId].myCellIdX;
+        double relYcolor = hosts[nodeId].myCellIdY;
+        relXcolor = 256*(relXcolor/numberOfRows);
+        relYcolor = 256*(relYcolor/numberOfColumns);
+        sprintf(buf, "group:%d, tgt:%d,%d",myGroup,
+        		hosts[nodeId].cellIdX, hosts[nodeId].cellIdY);
+        getParentModule()->getDisplayString().setTagArg("t", 0, buf);
+
+        for (int i=0;i<numberOfGroups;i++) {
+            for (int j=0;j<numberOfMembers[i];j++)
+                if (groups[i][j]-1 == nodeId)
+                	myGroup = i+1;
+        }
+        int groupSpan = 256/numberOfGroups;
+
+        sprintf(buf, "#%.2x%.2x%.2x",groupSpan*myGroup%256,
+        		(groupSpan*(numberOfGroups/3)+groupSpan*myGroup)%256,
+        		(groupSpan*(numberOfGroups*2/3)+groupSpan*myGroup)%256);
+        getParentModule()->getDisplayString().setTagArg("t", 2, buf);
+        getParentModule()->getDisplayString().setTagArg("i", 1, buf);
+    }
     else 
         MobilityBase::handleMessage(msg);
 }
@@ -445,6 +476,14 @@ void MusolesiMobility::setInitialPosition(bool shuffle)
             for (int j=0;j<numberOfColumns;j++) 
                 cells[i][j].numberOfHosts=0;
         groups=initialise_int_array(numHosts);
+        double gridSizex, gridSizeY;
+        gridSizex = (constraintAreaMax.x - constraintAreaMin.x)/numberOfColumns;
+
+        cDisplayString& parentDispStr = getParentModule()->getParentModule()->getDisplayString();
+
+        std::stringstream buf;
+        buf << "bgg=" << int(gridSizex);
+        parentDispStr.parse(buf.str().c_str());
     }
 
     //clustering using the Girvan-Newman algorithm
@@ -514,16 +553,36 @@ void MusolesiMobility::setInitialPosition(bool shuffle)
     }
     //definition of the initial position of the hosts
     if (!shuffle)
-        for (int k=0;k<numHosts;k++) {			
-            hosts[k].currentX=cells[hosts[k].cellIdX][hosts[k].cellIdY].minX+uniform(0.0,sideLengthX);
-            hosts[k].currentY=cells[hosts[k].cellIdX][hosts[k].cellIdY].minY+uniform(0.0,sideLengthY);
+        for (int k=0;k<numHosts;k++) {
+        	Coord randomPoint = getRandomPointWithObstacles(
+        			cells[hosts[k].cellIdX][hosts[k].cellIdY].minX,
+        			cells[hosts[k].cellIdX][hosts[k].cellIdY].minY);
+            hosts[k].currentX=randomPoint.x;
+            hosts[k].currentY=randomPoint.y;
         }
+
+
 }
 
 void MusolesiMobility::move()
 {
     LineSegmentsMobilityBase::move();
-    raiseErrorIfOutside();
+    double angle = 0;
+    // see http://dev.omnetpp.org/bugs/view.php?id=527
+    // raiseErrorIfOutside();
+    reflectIfOutside(lastPosition, lastSpeed, angle);
+}
+
+Coord MusolesiMobility::getRandomPointWithObstacles(int minX, int minY){
+	Coord upLeft, downRight;
+	upLeft.x = minX;
+	upLeft.y = minY;
+	upLeft.z = 0;
+	downRight.x = minX+sideLengthX;
+	downRight.y = minY+sideLengthY;
+	downRight.z = 1;
+
+	return  LineSegmentsMobilityBase::getRandomPositionWithObstacles(upLeft, downRight);
 }
 
 void MusolesiMobility::finish(){
