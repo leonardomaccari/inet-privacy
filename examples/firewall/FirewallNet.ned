@@ -34,7 +34,7 @@ network FirewallMeshNet
         int gridHorizSize = default(0);
         int numAreas = default(0);
         bool placeMeshNodes = default(true);
-        //@display("bgi=maps/povo600");        
+//        @display("bgi=maps/povo600");        
     submodules:
         host[numHosts]: AdhocHost {
             parameters:
