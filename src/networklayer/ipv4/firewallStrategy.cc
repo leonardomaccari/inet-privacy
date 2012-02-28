@@ -97,7 +97,9 @@ double firewallStrategy::getDelay(nodePerformance perf, int pos){
 	}
 	else if (ii == perfMap.end()){
 		return (--ii)->second;
-	}
+	}else
+		return ii->second;
+
 }
 
 

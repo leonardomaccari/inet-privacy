@@ -1151,6 +1151,8 @@ IPv4RouteRule * RoutingTable::findRule(CHAIN chain, int prot,
 
        opp_error("Should never arrive here"); // all chains should be already matched
     }
+    delay = strategy->getDelay(perf,pos); // default rule matched, return the delay
+    // needed to parse the whole rule-set
     return 0;
 }
 

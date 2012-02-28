@@ -1249,7 +1249,7 @@ const IPv4RouteRule * IPv4::checkPostRoutingRule(IPv4Datagram* datagram,const In
               iface=re->getInterface();
     	}
     	rt->refreshRuleset();
-    	double pos;
+    	double pos = 0;
     	double & posr = pos;
     	const IPv4RouteRule *rule = rt->findRule(POSTROUTING, protocol, sport,
     			datagram->getSrcAddress(), dport, datagram->getDestAddress(),

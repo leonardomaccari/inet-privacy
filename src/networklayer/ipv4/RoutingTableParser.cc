@@ -96,8 +96,11 @@ int RoutingTableParser::readRoutingTableFromFile(const char *filename)
     for (charpointer = 0;
          (file[charpointer] = getc(fp)) != EOF;
          charpointer++);
-
+    {
     charpointer++;
+    if (charpointer >= MAX_FILESIZE)
+    	opp_error("The ruleset file is too big!");
+    }
     for (; charpointer < MAX_FILESIZE; charpointer++)
         file[charpointer] = '\0';
     //    file[++charpointer] = '\0';
