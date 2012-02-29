@@ -55,7 +55,7 @@ for i in `seq 0 $(($PROCESSORS-1))`; do
 #  echo "Running "${RUNSTRINGS[$i]}
 #  RUNSTRINGS[$i]=${RUNSTRINGS[$i]}
 #  `(${RUNSTRINGS[$i]} >> /dev/null) &`;
-  `(${RUNSTRINGS[$i]} &> logs/$1-$i.txt) &`;
+  `(${RUNSTRINGS[$i]} &> logs/$1-$(($index+$i)).txt) &`;
   launchedprocesses=$(($launchedprocesses+1))
 done;
 
