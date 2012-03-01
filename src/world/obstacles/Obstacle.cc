@@ -131,7 +131,7 @@ Coord Obstacle::getTurningPoint(Coord * from, Coord * to, Coord * across) const{
 			count++;
 			p1 = c1;
 			p2 = c2;
-   		DEBUG_OUT<< "going to " << *to << ", intersecting from " << *from << " to "
+   		DEBUG_OUT << "going to " << *to << ", intersecting from " << *from << " to "
    				<< *across << " with line " << c1
    				<< c2 << " % of side length " << i << std::endl;
 		}

@@ -231,7 +231,7 @@ const Obstacle * ObstacleControl::isInObstacle(const Coord& target){
     			o->getBboxP2().y >= target.y){
         	// draw a "hit!" bubble
             if (annotations) annotations->drawBubble(o->getBboxP1(), "Obstacle!");
-            	DEBUG_OUT << target << " is not in " << o->getBboxP1().x << " " << o->getBboxP1().y << std::endl;
+            	DEBUG_OUT << target << " is  in " << o->getBboxP1().x << " " << o->getBboxP1().y << std::endl;
 
         	return o;
     	}

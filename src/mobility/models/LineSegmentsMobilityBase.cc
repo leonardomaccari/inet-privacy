@@ -106,7 +106,12 @@ void LineSegmentsMobilityBase::initialize(int stage)
 void LineSegmentsMobilityBase::move()
 {
     simtime_t now = simTime();
-
+    DEBUG_OUT << this->getParentModule()->getFullPath() << " " << lastPosition << std::endl;
+    if (obstacleAvoidance && obstacles->isInObstacle(lastPosition)){
+    	std::stringstream log;
+    	log << "This node is inside an obstacle in position" << lastPosition;
+    	error(log.str().c_str());
+    }
     // new waypoint, no obstacle avoidance active
     if (now >= nextChange && ! deviating) {
         lastPosition = targetPosition;
@@ -170,14 +175,22 @@ void LineSegmentsMobilityBase::move()
         	Coord routeDeviationT = o->getTurningPoint(&previousPosition,
         			&targetPosition, &nextPosition );
         	Coord initialCoord = routeDeviationT;
-        	shufflePoint(&routeDeviationT);
+     //   	shufflePoint(&routeDeviationT);
         	int count = 0;
-        	// get a random point around the turning point
+        	Coord temporaryLastPosition, temporarySpeed;
+        	bool invalidNextStep = true; // first round always fails...
+        	/* get a random point close to the turning point in a way that:
+        	 *  - the point is not in an obstacle
+        	 *  - the point is inside the area
+        	 *  - the next step to that point is not inside an obstacle
+        	 */
         	while (obstacles->isInObstacle(routeDeviationT)
         			|| ( routeDeviationT.x < 0 || routeDeviationT.y < 0 ||
         	             routeDeviationT.x > constraintAreaMax.x ||
         	             routeDeviationT.y > constraintAreaMax.y )
-        	        || ( routeDeviationT == previousPosition)){
+        	        || ( routeDeviationT == previousPosition)
+        	        || invalidNextStep){
+
         		routeDeviationT = initialCoord;
         		shufflePoint(&routeDeviationT);
         		count++;
@@ -186,10 +199,37 @@ void LineSegmentsMobilityBase::move()
         					" topology (double check that the obstacles"
         					" you generated completely fit in the scenario)");
         		}
-        	}
+        		// Check that the next update is not in an obstacle
+        		DEBUG_OUT << "now is " << now << " nextChange " << nextChange
+        				<< " updated to ";
+        		nextChange = now+(routeDeviationT - previousPosition).length()/(lastSpeed.length());
+        		DEBUG_OUT << nextChange << std::endl;
+        		// temporary values to check the next update position
+        		temporarySpeed = (routeDeviationT - previousPosition) / (nextChange - now).dbl();
+        		temporaryLastPosition = lastPosition + temporarySpeed * (now - lastUpdate).dbl();
 
+
+        		if (obstacles->isInObstacle(temporaryLastPosition)){
+        			DEBUG_OUT <<  this->getParentModule()->getFullPath() <<
+        					" Bad Luck! you chose a correct deviating point "
+        					<< routeDeviationT <<
+        					" but to get there you have to pass for"
+        					" an obstacle in the next update " <<
+        					temporaryLastPosition << std::endl;
+        			invalidNextStep = true;
+        		} else {
+        			invalidNextStep = false;
+        		}
+        	}
+			if  (deviating == 0){
+				targetPositionBak = targetPosition;
+				deviating = true;
+			}
+			targetPosition = routeDeviationT;
+			lastSpeed = temporarySpeed;
+			lastPosition = temporaryLastPosition;
         	// check if we head to the corner
-        	DEBUG_OUT << " deviating to " <<  routeDeviationT << std::endl;
+        	DEBUG_OUT <<  this->getParentModule()->getFullPath() << " deviating to " <<  routeDeviationT << " in order to pass turning point " <<  initialCoord << std::endl;
 
         	// OPTIMIZE: use a stack of past targets instead of 1-step memory.
         	// Else, we can not keep track of original speed when crossing
@@ -197,22 +237,7 @@ void LineSegmentsMobilityBase::move()
 
         	// if we were already deviating, do not save the previous target,
         	// since obstacles are convex, this should not lead to a deadlock
-        	if  ( deviating == 0){
-        		targetPositionBak = targetPosition;
-        		deviating = true;
-        	}
 
-        	targetPosition = routeDeviationT;
-
-
-        	DEBUG_OUT << "now is " << now << " nextChange " << nextChange
-        			<< " updated to ";
-        	nextChange = now+(targetPosition - previousPosition).length()/(lastSpeed.length());
-        	DEBUG_OUT << nextChange << std::endl;
-
-            lastSpeed = (targetPosition - previousPosition) / (nextChange - now).dbl();
-
-            lastPosition = lastPosition + lastSpeed * (now - lastUpdate).dbl();
         } else{
         	lastPosition = nextPosition;
             DEBUG_OUT << "going forward. x = " << lastPosition.x
